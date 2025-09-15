@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Toma de Asistencias a Cultos</title>
+    <title>Asistencia a Cultos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style type="text/tailwindcss">
@@ -49,7 +49,7 @@
         <header class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-bold text-accent">
                 <i class="fa-solid fa-hotel"></i>
-                Control Toma de Asistencia
+                Control de Asistencia
             </h1>
             <div>
                 <button id="themeToggle" class="p-2 rounded-full bg-secondary hover:bg-accent hover:text-primary transition">
@@ -273,33 +273,72 @@
             <div class="bg-secondary rounded-lg shadow-xl p-6">
                 <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
                     <i class="fas fa-users text-accent"></i>
-                    Asistencia Total
+                    Asistencia Promedio
                 </h3>
+                <div class="mb-4 p-4 bg-primary rounded-lg border border-gray-600">
+                    <h4 class="font-semibold mb-2 text-accent">Filtrar Promedios</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="statsFilterType" class="text-sm text-txtsecondary">Tipo de Culto</label>
+                            <select id="statsFilterType" class="w-full mt-1 p-2 text-sm rounded-lg bg-secondary border border-gray-500 focus:border-accent focus:ring-2 focus:ring-accent outline-none">
+                                <option value="all">Todos</option>
+                                <option value="Escuela Dominical">Escuela Dominical</option>
+                                <option value="Culto Evangelístico">Culto Evangelístico</option>
+                                <option value="Culto de Oración">Culto de Oración</option>
+                                <option value="Culto de Dorcas">Culto de Dorcas</option>
+                                <option value="Culto de Caballeros">Culto de Caballeros</option>
+                                <option value="Culto de Jóvenes">Culto de Jóvenes</option>
+                                <option value="Culto Acción de Gracias">Culto Acción de Gracias</option>
+                                <option value="Culto música">Culto Música</option>
+                                <option value="Culto Campaña">Culto Campaña</option>
+                                <option value="Culto Especial">Culto Especial</option>
+                                <option value="Culto Misionero (Día)">Culto Misionero (Día)</option>
+                                <option value="Culto Misionero (Noche)">Culto Misionero (Noche)</option>
+                                <option value="Confraternidad Dorcas (Mitad de Año)">Confraternidad Dorcas (Mitad de Año)</option>
+                                <option value="Confraternidad Dorcas (Fin de Año)">Confraternidad Dorcas (Fin de Año)</option>
+                                <option value="Confraternidad Jóvenes (Mitad de Año)">Confraternidad Jóvenes (Mitad de Año)</option>
+                                <option value="Confraternidad Jóvenes (Fin de Año)">Confraternidad Jóvenes (Fin de Año)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="statsFilterStartDate" class="text-sm text-txtsecondary">Desde</label>
+                            <input type="date" id="statsFilterStartDate" class="w-full mt-1 p-2 text-sm rounded-lg bg-secondary border border-gray-500 focus:border-accent focus:ring-2 focus:ring-accent outline-none">
+                        </div>
+                        <div>
+                            <label for="statsFilterEndDate" class="text-sm text-txtsecondary">Hasta</label>
+                            <input type="date" id="statsFilterEndDate" class="w-full mt-1 p-2 text-sm rounded-lg bg-secondary border border-gray-500 focus:border-accent focus:ring-2 focus:ring-accent outline-none">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button id="applyStatsFilterBtn" class="flex-1 bg-accent text-primary py-2 px-4 rounded-lg text-sm transition hover:opacity-80">Aplicar Filtro</button>
+                        <button id="resetStatsFilterBtn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg text-sm transition">Resetear</button>
+                    </div>
+                </div>
                 <div class="space-y-2">
                     <p class="flex justify-between">
-                        <span>Hermanos:</span>
-                        <span id="totalBrothers" class="font-bold">0</span>
+                        <span>Prom. Hermanos:</span>
+                        <span id="avgBrothers" class="font-bold">0</span>
                     </p>
                     <p class="flex justify-between">
-                        <span>Hermanas:</span>
-                        <span id="totalSisters" class="font-bold">0</span>
+                        <span>Prom. Hermanas:</span>
+                        <span id="avgSisters" class="font-bold">0</span>
                     </p>
                     <p class="flex justify-between">
-                        <span>Visitas:</span>
-                        <span id="totalVisitors" class="font-bold">0</span>
+                        <span>Prom. Visitas:</span>
+                        <span id="avgVisitors" class="font-bold">0</span>
                     </p>
                     <p class="flex justify-between">
-                        <span>Niños:</span>
-                        <span id="totalChildren" class="font-bold">0</span>
+                        <span>Prom. Niños:</span>
+                        <span id="avgChildren" class="font-bold">0</span>
                     </p>
                     <p class="flex justify-between">
-                        <span>Hermanos Visitantes:</span>
-                        <span id="totalVisitingBrothers" class="font-bold">0</span>
+                        <span>Prom. Hnos. Visitantes:</span>
+                        <span id="avgVisitingBrothers" class="font-bold">0</span>
                     </p>
                     <div class="border-t border-gray-600 pt-2 mt-2">
                         <p class="flex justify-between font-bold text-accent">
-                            <span>Total General:</span>
-                            <span id="grandTotal">0</span>
+                            <span>Promedio General:</span>
+                            <span id="avgGrandTotal">0</span>
                         </p>
                     </div>
                 </div>
@@ -308,8 +347,47 @@
             <div class="bg-secondary rounded-lg shadow-xl p-6">
                 <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
                     <i class="fas fa-hand-holding-usd text-accent"></i>
-                    Ofrendas Totales
+                    Ofrendas
                 </h3>
+                <div class="mb-4 p-4 bg-primary rounded-lg border border-gray-600">
+                    <h4 class="font-semibold mb-2 text-accent">Filtrar Ofrendas</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="offeringFilterType" class="text-sm text-txtsecondary">Tipo de Culto</label>
+                            <select id="offeringFilterType" class="w-full mt-1 p-2 text-sm rounded-lg bg-secondary border border-gray-500 focus:border-accent focus:ring-2 focus:ring-accent outline-none">
+                                <option value="all">Todos</option>
+                                <option value="Escuela Dominical">Escuela Dominical</option>
+                                <option value="Culto Evangelístico">Culto Evangelístico</option>
+                                <option value="Culto de Oración">Culto de Oración</option>
+                                <option value="Culto de Dorcas">Culto de Dorcas</option>
+                                <option value="Culto de Caballeros">Culto de Caballeros</option>
+                                <option value="Culto de Jóvenes">Culto de Jóvenes</option>
+                                <option value="Culto Acción de Gracias">Culto Acción de Gracias</option>
+                                <option value="Culto música">Culto Música</option>
+                                <option value="Culto Campaña">Culto Campaña</option>
+                                <option value="Culto Especial">Culto Especial</option>
+                                <option value="Culto Misionero (Día)">Culto Misionero (Día)</option>
+                                <option value="Culto Misionero (Noche)">Culto Misionero (Noche)</option>
+                                <option value="Confraternidad Dorcas (Mitad de Año)">Confraternidad Dorcas (Mitad de Año)</option>
+                                <option value="Confraternidad Dorcas (Fin de Año)">Confraternidad Dorcas (Fin de Año)</option>
+                                <option value="Confraternidad Jóvenes (Mitad de Año)">Confraternidad Jóvenes (Mitad de Año)</option>
+                                <option value="Confraternidad Jóvenes (Fin de Año)">Confraternidad Jóvenes (Fin de Año)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="offeringFilterStartDate" class="text-sm text-txtsecondary">Desde</label>
+                            <input type="date" id="offeringFilterStartDate" class="w-full mt-1 p-2 text-sm rounded-lg bg-secondary border border-gray-500 focus:border-accent focus:ring-2 focus:ring-accent outline-none">
+                        </div>
+                        <div>
+                            <label for="offeringFilterEndDate" class="text-sm text-txtsecondary">Hasta</label>
+                            <input type="date" id="offeringFilterEndDate" class="w-full mt-1 p-2 text-sm rounded-lg bg-secondary border border-gray-500 focus:border-accent focus:ring-2 focus:ring-accent outline-none">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button id="applyOfferingFilterBtn" class="flex-1 bg-accent text-primary py-2 px-4 rounded-lg text-sm transition hover:opacity-80">Aplicar Filtro</button>
+                        <button id="resetOfferingFilterBtn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg text-sm transition">Resetear</button>
+                    </div>
+                </div>
                 <div class="space-y-2">
                     <p class="flex justify-between">
                         <span>Total Ofrendas:</span>
@@ -317,6 +395,7 @@
                     </p>
                     <p class="text-sm text-txtsecondary">Promedio por culto:</p>
                     <p id="averageOffering" class="text-center text-2xl font-bold text-accent mt-2">$0</p>
+                    <p class="text-xs text-center text-txtsecondary italic">(Según filtros aplicados)</p>
                 </div>
             </div>
             
@@ -325,8 +404,13 @@
                     <i class="fas fa-chart-pie text-accent"></i>
                     Distribución por Cultos
                 </h3>
-                <div class="h-40 flex items-center justify-center">
-                    <canvas id="servicesChart"></canvas>
+                <div class="grid grid-cols-2 gap-4 items-center">
+                    <div class="h-40 relative">
+                        <canvas id="servicesChart"></canvas>
+                    </div>
+                    <div id="chartLegend" class="text-xs space-y-1 overflow-y-auto max-h-40 pr-2">
+                        <!-- Legend items will be generated here -->
+                    </div>
                 </div>
             </div>
         </section>
@@ -366,6 +450,16 @@
         const successToast = document.getElementById('successToast');
         const filterRecords = document.getElementById('filterRecords');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const statsFilterType = document.getElementById('statsFilterType');
+        const statsFilterStartDate = document.getElementById('statsFilterStartDate');
+        const statsFilterEndDate = document.getElementById('statsFilterEndDate');
+        const applyStatsFilterBtn = document.getElementById('applyStatsFilterBtn');
+        const resetStatsFilterBtn = document.getElementById('resetStatsFilterBtn');
+        const offeringFilterType = document.getElementById('offeringFilterType');
+        const offeringFilterStartDate = document.getElementById('offeringFilterStartDate');
+        const offeringFilterEndDate = document.getElementById('offeringFilterEndDate');
+        const applyOfferingFilterBtn = document.getElementById('applyOfferingFilterBtn');
+        const resetOfferingFilterBtn = document.getElementById('resetOfferingFilterBtn');
         
         // Attendance counters
         const brothersInput = document.getElementById('brothers');
@@ -379,12 +473,12 @@
         const totalOffering = document.getElementById('totalOffering');
         
         // Stats elements
-        const totalBrothers = document.getElementById('totalBrothers');
-        const totalSisters = document.getElementById('totalSisters');
-        const totalVisitors = document.getElementById('totalVisitors');
-        const totalChildren = document.getElementById('totalChildren');
-        const totalVisitingBrothers = document.getElementById('totalVisitingBrothers');
-        const grandTotal = document.getElementById('grandTotal');
+        const avgBrothers = document.getElementById('avgBrothers');
+        const avgSisters = document.getElementById('avgSisters');
+        const avgVisitors = document.getElementById('avgVisitors');
+        const avgChildren = document.getElementById('avgChildren');
+        const avgVisitingBrothers = document.getElementById('avgVisitingBrothers');
+        const avgGrandTotal = document.getElementById('avgGrandTotal');
         const totalAllOfferings = document.getElementById('totalAllOfferings');
         const averageOffering = document.getElementById('averageOffering');
         
@@ -393,6 +487,18 @@
         
         // Chart
         let servicesChart;
+        const serviceTypesForChart = [
+            'Escuela Dominical', 'Culto Evangelístico', 'Culto de Oración', 'Culto de Dorcas',
+            'Culto de Caballeros', 'Culto de Jóvenes', 'Culto Acción de Gracias', 'Culto música',
+            'Culto Campaña', 'Culto Especial', 'Culto Misionero (Día)', 'Culto Misionero (Noche)',
+            'Confraternidad Dorcas (Mitad de Año)', 'Confraternidad Dorcas (Fin de Año)',
+            'Confraternidad Jóvenes (Mitad de Año)', 'Confraternidad Jóvenes (Fin de Año)'
+        ];
+        const chartColors = [
+            '#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899',
+            '#14B8A6', '#F97316', '#6366F1', '#06B6D4', '#D946EF', '#22C55E',
+            '#84CC16', '#EAB308', '#78716c', '#f43f5e'
+        ];
         
         // App state
         let records = JSON.parse(localStorage.getItem('churchAttendanceRecords')) || [];
@@ -417,6 +523,10 @@
         modalConfirmBtn.addEventListener('click', confirmAction);
         exportExcelBtn.addEventListener('click', exportToExcel);
         filterRecords.addEventListener('change', filterRecordsTable);
+        applyStatsFilterBtn.addEventListener('click', applyStatsFilter);
+        resetStatsFilterBtn.addEventListener('click', resetStatsFilter);
+        applyOfferingFilterBtn.addEventListener('click', applyOfferingFilter);
+        resetOfferingFilterBtn.addEventListener('click', resetOfferingFilter);
         
         // Attendance buttons
         document.querySelectorAll('.increment').forEach(btn => {
@@ -571,7 +681,8 @@
 
             localStorage.setItem('churchAttendanceRecords', JSON.stringify(records));
             
-            updateStats();
+            updateAttendanceStats();
+            updateOfferingStats();
             renderRecordsTable();
             updateChart();
             clearForm();
@@ -732,7 +843,8 @@
             records = records.filter(record => record.id !== recordId);
             localStorage.setItem('churchAttendanceRecords', JSON.stringify(records));
             
-            updateStats();
+            updateAttendanceStats();
+            updateOfferingStats();
             renderRecordsTable();
             updateChart();
             
@@ -794,6 +906,78 @@
             showToast('Registros exportados a Excel (CSV)');
         }
 
+        function applyStatsFilter() {
+            const type = statsFilterType.value;
+            const startDate = statsFilterStartDate.value;
+            const endDate = statsFilterEndDate.value;
+
+            let filteredRecords = records.filter(record => {
+                const recordDate = record.date;
+                let typeMatch = true;
+                let startDateMatch = true;
+                let endDateMatch = true;
+
+                if (type !== 'all') {
+                    typeMatch = record.type === type;
+                }
+                if (startDate) {
+                    startDateMatch = recordDate >= startDate;
+                }
+                if (endDate) {
+                    endDateMatch = recordDate <= endDate;
+                }
+
+                return typeMatch && startDateMatch && endDateMatch;
+            });
+
+            updateAttendanceStats(filteredRecords);
+            showToast(`Mostrando promedios para ${filteredRecords.length} registros filtrados.`);
+        }
+
+        function resetStatsFilter() {
+            statsFilterType.value = 'all';
+            statsFilterStartDate.value = '';
+            statsFilterEndDate.value = '';
+            updateAttendanceStats(); // Use default (all records)
+            showToast('Filtros de promedio reseteados.');
+        }
+
+        function applyOfferingFilter() {
+            const type = offeringFilterType.value;
+            const startDate = offeringFilterStartDate.value;
+            const endDate = offeringFilterEndDate.value;
+
+            let filteredRecords = records.filter(record => {
+                const recordDate = record.date;
+                let typeMatch = true;
+                let startDateMatch = true;
+                let endDateMatch = true;
+
+                if (type !== 'all') {
+                    typeMatch = record.type === type;
+                }
+                if (startDate) {
+                    startDateMatch = recordDate >= startDate;
+                }
+                if (endDate) {
+                    endDateMatch = recordDate <= endDate;
+                }
+
+                return typeMatch && startDateMatch && endDateMatch;
+            });
+
+            updateOfferingStats(filteredRecords);
+            showToast(`Mostrando ofrendas para ${filteredRecords.length} registros filtrados.`);
+        }
+
+        function resetOfferingFilter() {
+            offeringFilterType.value = 'all';
+            offeringFilterStartDate.value = '';
+            offeringFilterEndDate.value = '';
+            updateOfferingStats(); // Use default (all records)
+            showToast('Filtros de ofrendas reseteados.');
+        }
+
         function filterRecordsTable() {
             renderRecordsTable();
         }
@@ -806,68 +990,86 @@
             return date.toLocaleDateString('es-ES', options);
         }
         
-        function updateStats() {
-            // Calculate totals
-            const totalBrothersCount = records.reduce((sum, record) => sum + record.brothers, 0);
-            const totalSistersCount = records.reduce((sum, record) => sum + record.sisters, 0);
-            const totalVisitorsCount = records.reduce((sum, record) => sum + record.visitors, 0);
-            const totalChildrenCount = records.reduce((sum, record) => sum + record.children, 0);
-            const totalVisitingBrothersCount = records.reduce((sum, record) => sum + (record.visitingBrothers || 0), 0);
+        function updateAttendanceStats(recordsToProcess = records) {
+            const numRecords = recordsToProcess.length;
+
+            const totalBrothersCount = recordsToProcess.reduce((sum, record) => sum + record.brothers, 0);
+            const totalSistersCount = recordsToProcess.reduce((sum, record) => sum + record.sisters, 0);
+            const totalVisitorsCount = recordsToProcess.reduce((sum, record) => sum + record.visitors, 0);
+            const totalChildrenCount = recordsToProcess.reduce((sum, record) => sum + record.children, 0);
+            const totalVisitingBrothersCount = recordsToProcess.reduce((sum, record) => sum + (record.visitingBrothers || 0), 0);
             const totalAllAttendees = totalBrothersCount + totalSistersCount + totalVisitorsCount + totalChildrenCount + totalVisitingBrothersCount;
             
-            const totalOfferings = records.reduce((sum, record) => sum + record.offering, 0);
-            const averagePerService = records.length > 0 ? Math.round(totalOfferings / records.length) : 0;
+            const avgBrothersCount = numRecords > 0 ? (totalBrothersCount / numRecords).toFixed(1) : '0';
+            const avgSistersCount = numRecords > 0 ? (totalSistersCount / numRecords).toFixed(1) : '0';
+            const avgVisitorsCount = numRecords > 0 ? (totalVisitorsCount / numRecords).toFixed(1) : '0';
+            const avgChildrenCount = numRecords > 0 ? (totalChildrenCount / numRecords).toFixed(1) : '0';
+            const avgVisitingBrothersCount = numRecords > 0 ? (totalVisitingBrothersCount / numRecords).toFixed(1) : '0';
+            const avgGrandTotalCount = numRecords > 0 ? (totalAllAttendees / numRecords).toFixed(1) : '0';
             
-            // Update UI
-            totalBrothers.textContent = totalBrothersCount;
-            totalSisters.textContent = totalSistersCount;
-            totalVisitors.textContent = totalVisitorsCount;
-            totalChildren.textContent = totalChildrenCount;
-            totalVisitingBrothers.textContent = totalVisitingBrothersCount;
-            grandTotal.textContent = totalAllAttendees;
+            avgBrothers.textContent = avgBrothersCount;
+            avgSisters.textContent = avgSistersCount;
+            avgVisitors.textContent = avgVisitorsCount;
+            avgChildren.textContent = avgChildrenCount;
+            avgVisitingBrothers.textContent = avgVisitingBrothersCount;
+            avgGrandTotal.textContent = avgGrandTotalCount;
+        }
+
+        function updateOfferingStats(recordsToProcess = records) {
+            const numRecords = recordsToProcess.length;
+            const totalOfferings = recordsToProcess.reduce((sum, record) => sum + record.offering, 0);
+            const averagePerService = numRecords > 0 ? Math.round(totalOfferings / numRecords) : 0;
+
             totalAllOfferings.textContent = `$${totalOfferings.toLocaleString()}`;
             averageOffering.textContent = `$${averagePerService.toLocaleString()}`;
+        }
+
+        function generateChartLegend() {
+            const legendContainer = document.getElementById('chartLegend');
+            if (!legendContainer) return;
+
+            legendContainer.innerHTML = '';
+            const datasets = servicesChart.data.datasets[0];
+            const labels = servicesChart.data.labels;
+
+            let hasData = false;
+            labels.forEach((label, index) => {
+                const count = datasets.data[index];
+                if (count > 0) {
+                    hasData = true;
+                    const color = datasets.backgroundColor[index];
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'flex items-center gap-2';
+                    legendItem.innerHTML = `
+                        <span class="w-3 h-3 rounded-sm" style="background-color: ${color}"></span>
+                        <span class="flex-1 truncate" title="${label}">${label}</span>
+                        <span class="font-bold text-accent">${count}</span>
+                    `;
+                    legendContainer.appendChild(legendItem);
+                }
+            });
+
+            if (!hasData) {
+                 legendContainer.innerHTML = `<p class="text-txtsecondary text-center italic">No hay datos para el gráfico.</p>`;
+            }
         }
         
         function initializeChart() {
             const ctx = document.getElementById('servicesChart').getContext('2d');
             
-            // Group records by service type
-            const serviceTypes = [
-                'Escuela Dominical',
-                'Culto Evangelístico',
-                'Culto de Oración',
-                'Culto de Dorcas',
-                'Culto de Caballeros',
-                'Culto de Jóvenes',
-                'Culto Acción de Gracias',
-                'Culto Campaña',
-                'Culto Especial',                
-                'Culto Misionero (Día)',
-                'Culto Misionero (Noche)',
-                'Confraternidad Dorcas (Fin de Año)',
-                'Confraternidad Jóvenes (Fin de Año)',
-                'Culto música'
-            ];
-            
-            const data = serviceTypes.map(type => {
-                const typeRecords = records.filter(record => record.type === type);
-                return typeRecords.length;
+            const data = serviceTypesForChart.map(type => {
+                return records.filter(record => record.type === type).length;
             });
-            
-            const backgroundColors = [
-                '#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-                '#EC4899', '#14B8A6', '#F97316', '#6366F1'
-            ];
             
             servicesChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: serviceTypes,
+                    labels: serviceTypesForChart,
                     datasets: [{
                         data: data,
-                        backgroundColor: backgroundColors,
-                        borderWidth: 1
+                        backgroundColor: chartColors,
+                        borderWidth: 2,
+                        borderColor: document.documentElement.classList.contains('dark') ? '#2d3748' : '#edf2f7'
                     }]
                 },
                 options: {
@@ -875,42 +1077,24 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            display: false // We use a custom HTML legend
                         }
                     },
                     cutout: '70%'
                 }
             });
+            generateChartLegend();
         }
         
         function updateChart() {
-            const serviceTypes = [
-                'Escuela Dominical',
-                'Culto Evangelístico',
-                'Culto de Oración',
-                'Culto de Dorcas',
-                'Culto de Caballeros',
-                'Culto de Jóvenes',
-                'Culto Acción de Gracias',
-                'Culto Campaña',
-                'Culto Especial',
-                'Culto Misionero (Día)',
-                'Culto Misionero (Noche)',
-                'Confraternidad Dorcas (Fin de Año)',
-                'Confraternidad Jóvenes (Fin de Año)',
-                'Culto música'
-            ];
-            
-            const data = serviceTypes.map(type => {
-                const typeRecords = records.filter(record => record.type === type);
-                return typeRecords.length;
+            const data = serviceTypesForChart.map(type => {
+                return records.filter(record => record.type === type).length;
             });
             
             servicesChart.data.datasets[0].data = data;
             servicesChart.update();
+            generateChartLegend();
         }
     </script>
 </body>
 </html>
-
-
