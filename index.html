@@ -52,9 +52,6 @@
                 Control de Asistencia
             </h1>
             <div class="flex items-center gap-2">
-                <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-red-700 transition hidden">
-                    <i class="fas fa-sign-out-alt"></i> Salir
-                </button>
                 <button id="themeToggle" class="p-2 rounded-full bg-secondary hover:bg-accent hover:text-primary transition">
                     <i class="fas fa-moon dark:hidden"></i>
                     <i class="fas fa-sun hidden dark:inline"></i>
@@ -489,7 +486,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "TU_API_KEY",
@@ -502,7 +498,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
 
         // DOM Elements
         const themeToggle = document.getElementById('themeToggle');
@@ -534,7 +529,6 @@
         const attendeesModalContent = document.getElementById('attendeesModalContent');
         
         // Auth Elements
-        const logoutBtn = document.getElementById('logoutBtn');
         const actionButtons = document.getElementById('actionButtons');
         
         // Attendance counters
@@ -580,7 +574,6 @@
         let records = [];
         let currentAction = '';
         let editingRecordId = null;
-        let currentUser = null;
 
         // Escuchar cambios en tiempo real desde Firebase
         onSnapshot(collection(db, "asistencias"), (snapshot) => {
@@ -589,17 +582,6 @@
             updateOfferingStats();
             renderRecordsTable();
             updateChart();
-        });
-        
-        // Auth State Listener
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                logoutBtn.classList.remove('hidden');
-            } else {
-                logoutBtn.classList.add('hidden');
-            }
-            renderRecordsTable();
         });
 
         // Initialize theme
@@ -628,11 +610,6 @@
         applyOfferingFilterBtn.addEventListener('click', applyOfferingFilter);
         resetOfferingFilterBtn.addEventListener('click', resetOfferingFilter);
         
-        // Auth Events
-
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth).then(() => showToast('Sesión cerrada'));
-        });
 
         // Attendance buttons
         document.querySelectorAll('.increment').forEach(btn => {
@@ -728,45 +705,41 @@
         }
 
         async function saveRecord() {
-            if (!currentUser) {
-                showToast('Debes iniciar sesión para guardar', 'error');
-                return;
-            }
-
             const serviceType = document.getElementById('serviceType').value;
             const serviceDate = document.getElementById('serviceDate').value;
-            const serviceLeader = document.getElementById('serviceLeader').value;
-            const servicePreacher = document.getElementById('servicePreacher').value;
-            const serviceOffering = parseInt(document.getElementById('serviceOffering').value) || 0;
-            const brothers = parseInt(brothersInput.value) || 0;
-            const sisters = parseInt(sistersInput.value) || 0;
-            const visitors = parseInt(visitorsInput.value) || 0;
-            const children = parseInt(childrenInput.value) || 0;
-            const visitingBrothers = parseInt(visitingBrothersInput.value) || 0;
-            const attendeeNamesRaw = document.getElementById('attendeeNames').value;
-            const attendeeNames = attendeeNamesRaw.split('\n').map(name => name.trim()).filter(name => name.length > 0);
             
             if (!serviceType || !serviceDate) {
                 showToast('Debes completar tipo de servicio y fecha', 'error');
                 return;
             }
             
-            const recordData = {
-                type: serviceType,
-                date: serviceDate,
-                leader: serviceLeader,
-                preacher: servicePreacher,
-                offering: serviceOffering,
-                brothers: brothers,
-                sisters: sisters,
-                visitors: visitors,
-                children: children,
-                visitingBrothers: visitingBrothers,
-                attendeeNames: attendeeNames,
-                timestamp: new Date().toISOString()
-            };
-
             try {
+                const serviceLeader = document.getElementById('serviceLeader').value;
+                const servicePreacher = document.getElementById('servicePreacher').value;
+                const serviceOffering = parseInt(document.getElementById('serviceOffering').value) || 0;
+                const brothers = parseInt(brothersInput.value) || 0;
+                const sisters = parseInt(sistersInput.value) || 0;
+                const visitors = parseInt(visitorsInput.value) || 0;
+                const children = parseInt(childrenInput.value) || 0;
+                const visitingBrothers = parseInt(visitingBrothersInput.value) || 0;
+                const attendeeNamesRaw = document.getElementById('attendeeNames').value;
+                const attendeeNames = attendeeNamesRaw.split('\n').map(name => name.trim()).filter(name => name.length > 0);
+
+                const recordData = {
+                    type: serviceType,
+                    date: serviceDate,
+                    leader: serviceLeader,
+                    preacher: servicePreacher,
+                    offering: serviceOffering,
+                    brothers: brothers,
+                    sisters: sisters,
+                    visitors: visitors,
+                    children: children,
+                    visitingBrothers: visitingBrothers,
+                    attendeeNames: attendeeNames,
+                    timestamp: new Date().toISOString()
+                };
+
                 if (editingRecordId !== null) {
                     await updateDoc(doc(db, "asistencias", editingRecordId), recordData);
                     showToast('Registro actualizado exitosamente');
@@ -778,12 +751,15 @@
             } catch (error) {
                 console.error("Error saving document: ", error);
                 showToast('Error al guardar: ' + error.message, 'error');
+                clearForm(true);
             }
         }
         
-        function clearForm() {
+        function clearForm(keepDate = false) {
             document.getElementById('serviceType').value = '';
-            document.getElementById('serviceDate').value = '';
+            if (!keepDate) {
+                document.getElementById('serviceDate').value = '';
+            }
             document.getElementById('serviceLeader').value = '';
             document.getElementById('servicePreacher').value = '';
             document.getElementById('serviceOffering').value = '';
@@ -800,6 +776,7 @@
             
             updateTotalAttendees();
             updateOfferingDisplay();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
         function startNewRecord() {
@@ -868,14 +845,12 @@
                         <button class="view-attendees-btn p-1 text-green-400 hover:text-green-200 transition" data-id="${record.id}" title="Ver Asistentes">
                             <i class="fas fa-users"></i>
                         </button>
-                        ${currentUser ? `
-                            <button class="edit-btn p-1 text-blue-400 hover:text-blue-200 transition ml-2" data-id="${record.id}" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="delete-btn p-1 text-red-400 hover:text-red-200 transition ml-2" data-id="${record.id}" title="Eliminar">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        ` : ''}
+                        <button class="edit-btn p-1 text-blue-400 hover:text-blue-200 transition ml-2" data-id="${record.id}" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="delete-btn p-1 text-red-400 hover:text-red-200 transition ml-2" data-id="${record.id}" title="Eliminar">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </td>
                 `;
                 
@@ -991,7 +966,7 @@
             const headers = [
                 "Fecha", "Servicio", "Dirigió", "Predicó", 
                 "Hermanos", "Hermanas", "Visitas", "Niños", "Hnos. Visitantes",
-                "Total Asistentes", "Ofrenda"
+                "Total Asistentes", "Ofrenda", "Nombres de Asistentes"
             ];
 
             const sanitizeCell = (cell) => {
@@ -1004,11 +979,12 @@
 
             const rows = sortedRecords.map(record => {
                 const total = record.brothers + record.sisters + record.visitors + record.children + (record.visitingBrothers || 0);
+                const attendeeNamesStr = (record.attendeeNames || []).join(', ');
                 const rowData = [
                     record.date, // YYYY-MM-DD format is good for Excel
                     record.type, record.leader, record.preacher,
                     record.brothers, record.sisters, record.visitors, record.children, (record.visitingBrothers || 0),
-                    total, record.offering
+                    total, record.offering, attendeeNamesStr
                 ];
                 return rowData.map(sanitizeCell).join(',');
             });
