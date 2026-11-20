@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistencia a Cultos - Sincronizado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .dark {
+                --color-bg-primary: #1a202c;
+                --color-bg-secondary: #2d3748;
+                --color-text-primary: #f7fafc;
+                --color-text-secondary: #e2e8f0;
+                --color-accent: #81e6d9;
+            }
+            .light {
+                --color-bg-primary: #ffffff;
+                --color-bg-secondary: #edf2f7;
+                --color-text-primary: #2d3748;
+                --color-text-secondary: #4a5568;
+                --color-accent: #4299e1;
+            }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'var(--color-bg-primary)',
+                        secondary: 'var(--color-bg-secondary)',
+                        txtprimary: 'var(--color-text-primary)',
+                        txtsecondary: 'var(--color-text-secondary)',
+                        accent: 'var(--color-accent)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="min-h-screen bg-primary text-txtprimary transition-colors duration-300">
+    <div class="container mx-auto px-4 py-6 max-w-6xl">
+        <!-- Header -->
+        <header class="flex flex-wrap justify-between items-center gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-accent flex items-center gap-2">
+                    <i class="fa-solid fa-church"></i>
+                    Control de Asistencia
+                </h1>
+                <p id="connectionStatus" class="text-xs text-yellow-400 mt-1 flex items-center gap-1">
+                    <i class="fas fa-circle text-[8px]"></i> Conectando a la nube...
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Selector de Rol por Dispositivo -->
+                <div class="flex items-center gap-2 bg-secondary px-3 py-2 rounded-lg border border-gray-600">
+                    <i class="fas fa-user-tag text-accent text-sm"></i>
+                    <select id="roleSelector" class="bg-transparent text-sm outline-none cursor-pointer">
+                        <option value="all" class="bg-secondary">Vista: Completa (Todo)</option>
+                        <option value="brothers_general" class="bg-secondary">Rol: Hermanos y General</option>
+                        <option value="sisters" class="bg-secondary">Rol: Solo Hermanas</option>
+                        <option value="visitors_children" class="bg-secondary">Rol: Visitas y Niños</option>
+                        <option value="readonly" class="bg-secondary">Vista: Solo Lectura</option>
+                    </select>
+                </div>
+
+                <button id="themeToggle" class="p-2.5 rounded-lg bg-secondary border border-gray-600 hover:bg-accent hover:text-primary transition" title="Cambiar tema">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:inline"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Barra de Sesión de Culto Activo -->
+        <section class="bg-secondary rounded-lg shadow-lg p-4 mb-6 border-l-4 border-accent">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex-1">
+                    <label class="block text-xs uppercase tracking-wider text-txtsecondary mb-1">
+                        Culto en curso (sincronizado entre dispositivos)
+                    </label>
+                    <select id="activeSessionSelect" class="w-full p-2.5 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none font-medium">
+                        <option value="">Cargando cultos...</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 items-end">
+                    <button id="openNewSessionBtn" class="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg flex items-center gap-2 transition text-sm font-medium whitespace-nowrap">
+                        <i class="fas fa-plus-circle"></i> Abrir Nuevo Culto
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel Principal de Toma Colaborativa -->
+        <main id="workspacePanel" class="bg-secondary rounded-lg shadow-xl p-6 mb-8">
+            <div id="noSessionBanner" class="text-center py-8 text-txtsecondary hidden">
+                <i class="fas fa-calendar-plus text-4xl text-accent mb-3"></i>
+                <p class="text-lg font-medium">No hay un culto seleccionado</p>
+                <p class="text-sm mt-1">Selecciona uno arriba o pulsa <strong>"Abrir Nuevo Culto"</strong> para que todos los dispositivos empiecen a registrar.</p>
+            </div>
+
+            <div id="activeWorkspace" class="grid md:grid-cols-2 gap-6">
+                <!-- Sección Datos Generales -->
+                <div id="generalSection" class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-gray-600 pb-2">
+                        <h3 class="text-lg font-semibold text-accent">
+                            <i class="fas fa-clipboard-list mr-1"></i> Datos del Culto
+                        </h3>
+                        <span id="activeSessionBadge" class="text-xs bg-primary px-2.5 py-1 rounded-full text-txtsecondary"></span>
+                    </div>
+
+                    <div>
+                        <label class="block text-txtsecondary text-sm mb-1">Quién dirigió</label>
+                        <input type="text" id="serviceLeader" placeholder="Nombre de quien dirige" class="editable-general w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-txtsecondary text-sm mb-1">Quién predicó</label>
+                        <input type="text" id="servicePreacher" placeholder="Nombre del predicador" class="editable-general w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-txtsecondary text-sm mb-1">Ofrenda ($)</label>
+                        <input type="number" id="serviceOffering" placeholder="0" class="editable-general w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none" min="0" step="100">
+                    </div>
+
+                    <button id="saveGeneralBtn" class="editable-general w-full bg-green-600 hover:bg-green-700 text-white py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition font-medium">
+                        <i class="fas fa-cloud-upload-alt"></i> Guardar Datos Generales
+                    </button>
+                </div>
+
+                <!-- Sección Contadores de Asistencia en Tiempo Real -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-gray-600 pb-2">
+                        <h3 class="text-lg font-semibold text-accent">
+                            <i class="fas fa-users mr-1"></i> Conteo en Vivo
+                        </h3>
+                        <span class="text-xs text-green-400 flex items-center gap-1">
+                            <i class="fas fa-bolt"></i> Auto-guardado
+                        </span>
+                    </div>
+
+                    <!-- Hermanos -->
+                    <div class="counter-row flex items-center justify-between bg-primary/40 p-3 rounded-lg" data-group="brothers">
+                        <label class="text-txtsecondary font-medium">Hermanos</label>
+                        <div class="flex items-center">
+                            <button class="decrement bg-primary w-10 h-10 rounded-l-lg flex items-center justify-center hover:bg-red-600 hover:text-white transition" data-field="brothers">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span id="brothers" class="bg-primary h-10 w-16 flex items-center justify-center font-bold text-lg border-t border-b border-gray-600">0</span>
+                            <button class="increment bg-primary w-10 h-10 rounded-r-lg flex items-center justify-center hover:bg-green-600 hover:text-white transition" data-field="brothers">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hermanas -->
+                    <div class="counter-row flex items-center justify-between bg-primary/40 p-3 rounded-lg" data-group="sisters">
+                        <label class="text-txtsecondary font-medium">Hermanas</label>
+                        <div class="flex items-center">
+                            <button class="decrement bg-primary w-10 h-10 rounded-l-lg flex items-center justify-center hover:bg-red-600 hover:text-white transition" data-field="sisters">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span id="sisters" class="bg-primary h-10 w-16 flex items-center justify-center font-bold text-lg border-t border-b border-gray-600">0</span>
+                            <button class="increment bg-primary w-10 h-10 rounded-r-lg flex items-center justify-center hover:bg-green-600 hover:text-white transition" data-field="sisters">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Visitas -->
+                    <div class="counter-row flex items-center justify-between bg-primary/40 p-3 rounded-lg" data-group="visitors">
+                        <label class="text-txtsecondary font-medium">Visitas</label>
+                        <div class="flex items-center">
+                            <button class="decrement bg-primary w-10 h-10 rounded-l-lg flex items-center justify-center hover:bg-red-600 hover:text-white transition" data-field="visitors">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span id="visitors" class="bg-primary h-10 w-16 flex items-center justify-center font-bold text-lg border-t border-b border-gray-600">0</span>
+                            <button class="increment bg-primary w-10 h-10 rounded-r-lg flex items-center justify-center hover:bg-green-600 hover:text-white transition" data-field="visitors">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Niños -->
+                    <div class="counter-row flex items-center justify-between bg-primary/40 p-3 rounded-lg" data-group="children">
+                        <label class="text-txtsecondary font-medium">Niños</label>
+                        <div class="flex items-center">
+                            <button class="decrement bg-primary w-10 h-10 rounded-l-lg flex items-center justify-center hover:bg-red-600 hover:text-white transition" data-field="children">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span id="children" class="bg-primary h-10 w-16 flex items-center justify-center font-bold text-lg border-t border-b border-gray-600">0</span>
+                            <button class="increment bg-primary w-10 h-10 rounded-r-lg flex items-center justify-center hover:bg-green-600 hover:text-white transition" data-field="children">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hermanos Visitantes -->
+                    <div class="counter-row flex items-center justify-between bg-primary/40 p-3 rounded-lg" data-group="visitingBrothers">
+                        <label class="text-txtsecondary font-medium">Hermanos Visitantes</label>
+                        <div class="flex items-center">
+                            <button class="decrement bg-primary w-10 h-10 rounded-l-lg flex items-center justify-center hover:bg-red-600 hover:text-white transition" data-field="visitingBrothers">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span id="visitingBrothers" class="bg-primary h-10 w-16 flex items-center justify-center font-bold text-lg border-t border-b border-gray-600">0</span>
+                            <button class="increment bg-primary w-10 h-10 rounded-r-lg flex items-center justify-center hover:bg-green-600 hover:text-white transition" data-field="visitingBrothers">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Resumen Total en Vivo -->
+                    <div class="mt-4 p-4 bg-primary rounded-lg border border-gray-600">
+                        <h4 class="font-medium text-accent mb-2">Resumen del Culto Actual</h4>
+                        <p class="flex justify-between text-lg">
+                            <span>Total Asistentes:</span>
+                            <span id="totalAttendees" class="font-bold">0</span>
+                        </p>
+                        <p class="flex justify-between text-sm text-txtsecondary mt-1">
+                            <span>Ofrenda registrada:</span>
+                            <span id="totalOffering" class="font-bold text-txtprimary">$0</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Histórico de Registros -->
+        <section class="bg-secondary rounded-lg shadow-xl p-6">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                <h2 class="text-xl md:text-2xl font-bold text-accent">
+                    <i class="fas fa-history mr-2"></i>
+                    Registros Anteriores
+                </h2>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="exportExcelBtn" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center gap-2 transition text-sm">
+                        <i class="fas fa-file-excel"></i> Exportar a Excel
+                    </button>
+                    <select id="filterRecords" class="p-2 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none text-sm">
+                        <option value="all">Todos los servicios</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-primary rounded-lg overflow-hidden text-sm">
+                    <thead>
+                        <tr class="bg-accent text-primary">
+                            <th class="py-3 px-3 text-left">Fecha</th>
+                            <th class="py-3 px-3 text-left">Servicio</th>
+                            <th class="py-3 px-3 text-left">Dirigió</th>
+                            <th class="py-3 px-3 text-left">Predicó</th>
+                            <th class="py-3 px-3 text-center">Hnos.</th>
+                            <th class="py-3 px-3 text-center">Hnas.</th>
+                            <th class="py-3 px-3 text-center">Visitas</th>
+                            <th class="py-3 px-3 text-center">Niños</th>
+                            <th class="py-3 px-3 text-center">H. Visit.</th>
+                            <th class="py-3 px-3 text-center">Total</th>
+                            <th class="py-3 px-3 text-center">Ofrenda</th>
+                            <th class="py-3 px-3 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTable" class="divide-y divide-gray-600">
+                        <tr>
+                            <td colspan="12" class="py-4 text-center text-txtsecondary">Cargando registros...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Estadísticas Generales -->
+        <section class="mt-8 grid md:grid-cols-3 gap-6">
+            <div class="bg-secondary rounded-lg shadow-xl p-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-users text-accent"></i>
+                    Asistencia Acumulada
+                </h3>
+                <div class="space-y-2">
+                    <p class="flex justify-between"><span>Hermanos:</span><span id="totalBrothers" class="font-bold">0</span></p>
+                    <p class="flex justify-between"><span>Hermanas:</span><span id="totalSisters" class="font-bold">0</span></p>
+                    <p class="flex justify-between"><span>Visitas:</span><span id="totalVisitors" class="font-bold">0</span></p>
+                    <p class="flex justify-between"><span>Niños:</span><span id="totalChildren" class="font-bold">0</span></p>
+                    <p class="flex justify-between"><span>Hermanos Visitantes:</span><span id="totalVisitingBrothers" class="font-bold">0</span></p>
+                    <div class="border-t border-gray-600 pt-2 mt-2">
+                        <p class="flex justify-between font-bold text-accent">
+                            <span>Total General:</span>
+                            <span id="grandTotal">0</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-secondary rounded-lg shadow-xl p-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-hand-holding-usd text-accent"></i>
+                    Ofrendas Totales
+                </h3>
+                <div class="space-y-2">
+                    <p class="flex justify-between">
+                        <span>Total Ofrendas:</span>
+                        <span id="totalAllOfferings" class="font-bold">$0</span>
+                    </p>
+                    <p class="text-sm text-txtsecondary">Promedio por culto:</p>
+                    <p id="averageOffering" class="text-center text-2xl font-bold text-accent mt-2">$0</p>
+                </div>
+            </div>
+
+            <div class="bg-secondary rounded-lg shadow-xl p-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-chart-pie text-accent"></i>
+                    Distribución por Cultos
+                </h3>
+                <div class="h-40 flex items-center justify-center">
+                    <canvas id="servicesChart"></canvas>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal para Abrir Nuevo Culto -->
+    <div id="newSessionModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-secondary rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 class="text-xl font-bold text-accent mb-4">Abrir Nuevo Culto Compartido</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-txtsecondary mb-1">Tipo de Servicio</label>
+                    <select id="newServiceType" class="w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none"></select>
+                </div>
+                <div>
+                    <label class="block text-sm text-txtsecondary mb-1">Fecha</label>
+                    <input type="date" id="newServiceDate" class="w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="cancelNewSessionBtn" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">Cancelar</button>
+                <button id="createNewSessionBtn" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition">Crear y Sincronizar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Eliminación -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-secondary rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-3"></i>
+                <h3 class="text-xl font-bold mb-2">Eliminar Registro</h3>
+                <p class="text-txtsecondary mb-6">¿Estás seguro de eliminar este culto? Se borrará en todos los dispositivos.</p>
+            </div>
+            <div class="flex justify-center gap-4">
+                <button id="cancelDeleteBtn" class="px-6 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">Cancelar</button>
+                <button id="confirmDeleteBtn" class="px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast de Notificación -->
+    <div id="toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 hidden z-50">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Listo</span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import {
+            getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+            onSnapshot, query, orderBy, increment, serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // =========================================================================
+        // 1. PEGA AQUÍ LA CONFIGURACIÓN DE TU PROYECTO FIREBASE
+        // =========================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkA_s-s3jggfE7PXpBK8em00rPo4p2z48",
+            authDomain: "asistencias-de-cultos-ipuc.firebaseapp.com",
+            projectId:  "asistencias-de-cultos-ipuc",
+            storageBucket: "asistencias-de-cultos-ipuc.firebasestorage.app",
+            messagingSenderId: "742374152833",
+            appId: "1:742374152833:web:8c8f45be197edf15dfcb80"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const recordsCol = collection(db, "churchAttendanceRecords");
+
+        // Catálogo unificado de servicios (16 tipos)
+        const SERVICE_TYPES = [
+            "Escuela Dominical",
+            "Culto Evangelístico",
+            "Culto de Oración",
+            "Culto de Dorcas",
+            "Culto de Caballeros",
+            "Culto de Jóvenes",
+            "Culto Acción de Gracias",
+            "Culto Música",
+            "Culto Campaña",
+            "Culto Especial",
+            "Culto Misionero (Día)",
+            "Culto Misionero (Noche)",
+            "Confraternidad Dorcas (Mitad de Año)",
+            "Confraternidad Dorcas (Fin de Año)",
+            "Confraternidad Jóvenes (Mitad de Año)",
+            "Confraternidad Jóvenes (Fin de Año)"
+        ];
+
+        // Estado global sincronizado
+        let records = [];
+        let activeSessionId = localStorage.getItem("activeSessionId") || null;
+        let recordIdToDelete = null;
+        let servicesChart = null;
+
+        // Referencias DOM
+        const connectionStatus = document.getElementById("connectionStatus");
+        const roleSelector = document.getElementById("roleSelector");
+        const activeSessionSelect = document.getElementById("activeSessionSelect");
+        const noSessionBanner = document.getElementById("noSessionBanner");
+        const activeWorkspace = document.getElementById("activeWorkspace");
+        const activeSessionBadge = document.getElementById("activeSessionBadge");
+
+        const serviceLeaderInput = document.getElementById("serviceLeader");
+        const servicePreacherInput = document.getElementById("servicePreacher");
+        const serviceOfferingInput = document.getElementById("serviceOffering");
+        const saveGeneralBtn = document.getElementById("saveGeneralBtn");
+
+        const filterRecords = document.getElementById("filterRecords");
+        const recordsTable = document.getElementById("recordsTable");
+
+        // Inicializar selectores de tipos de servicio
+        function populateServiceSelects() {
+            const newServiceSelect = document.getElementById("newServiceType");
+            newServiceSelect.innerHTML = `<option value="">Seleccionar...</option>` +
+                SERVICE_TYPES.map(t => `<option value="${t}">${t}</option>`).join("");
+
+            filterRecords.innerHTML = `<option value="all">Todos los servicios</option>` +
+                SERVICE_TYPES.map(t => `<option value="${t}">${t}</option>`).join("");
+        }
+
+        // Tema claro/oscuro
+        const themeToggle = document.getElementById("themeToggle");
+        if (localStorage.getItem("theme") === "dark" || (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+            document.documentElement.classList.add("dark");
+        }
+        themeToggle.addEventListener("click", () => {
+            const isDark = document.documentElement.classList.toggle("dark");
+            localStorage.setItem("theme", isDark ? "dark" : "light");
+        });
+
+        // =========================================================================
+        // 2. SELECTOR DE ROL POR DISPOSITIVO (SIN LÍMITE DE USUARIOS)
+        // =========================================================================
+        const savedRole = localStorage.getItem("deviceRole") || "all";
+        roleSelector.value = savedRole;
+
+        function applyRoleView(role) {
+            localStorage.setItem("deviceRole", role);
+            const generalSection = document.getElementById("generalSection");
+            const counterRows = document.querySelectorAll(".counter-row");
+            const isReadOnly = role === "readonly";
+
+            // Mostrar/ocultar sección de datos generales
+            if (role === "all" || role === "brothers_general" || isReadOnly) {
+                generalSection.classList.remove("hidden");
+            } else {
+                generalSection.classList.add("hidden");
+            }
+
+            // Bloquear inputs generales si es solo lectura
+            document.querySelectorAll(".editable-general").forEach(el => {
+                el.disabled = isReadOnly;
+                if (el.tagName === "BUTTON") {
+                    el.classList.toggle("hidden", isReadOnly);
+                }
+            });
+
+            // Filtrar contadores visibles según rol
+            counterRows.forEach(row => {
+                const group = row.dataset.group;
+                let visible = false;
+
+                if (role === "all" || isReadOnly) visible = true;
+                else if (role === "brothers_general" && (group === "brothers" || group === "visitingBrothers")) visible = true;
+                else if (role === "sisters" && group === "sisters") visible = true;
+                else if (role === "visitors_children" && (group === "visitors" || group === "children")) visible = true;
+
+                row.classList.toggle("hidden", !visible);
+
+                // Ocultar botones + y - si es modo solo lectura
+                row.querySelectorAll("button").forEach(btn => {
+                    btn.classList.toggle("hidden", isReadOnly);
+                });
+            });
+        }
+
+        roleSelector.addEventListener("change", (e) => applyRoleView(e.target.value));
+        applyRoleView(savedRole);
+
+        // =========================================================================
+        // 3. ESCUCHA EN TIEMPO REAL DESDE FIRESTORE
+        // =========================================================================
+        const q = query(recordsCol, orderBy("date", "desc"));
+        onSnapshot(q, (snapshot) => {
+            connectionStatus.innerHTML = `<i class="fas fa-circle text-[8px] text-green-400"></i> Sincronizado en tiempo real`;
+            connectionStatus.className = "text-xs text-green-400 mt-1 flex items-center gap-1";
+
+            records = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            // Si no hay sesión elegida o fue borrada, seleccionar automáticamente el culto más reciente
+            if (records.length > 0 && (!activeSessionId || !records.some(r => r.id === activeSessionId))) {
+                activeSessionId = records[0].id;
+                localStorage.setItem("activeSessionId", activeSessionId);
+            } else if (records.length === 0) {
+                activeSessionId = null;
+            }
+
+            renderSessionSelector();
+            renderActiveSession();
+            renderRecordsTable();
+            updateStats();
+            updateChart();
+        }, (error) => {
+            console.error(error);
+            connectionStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error de conexión (revisa firebaseConfig)`;
+            connectionStatus.className = "text-xs text-red-400 mt-1 flex items-center gap-1";
+        });
+
+        function renderSessionSelector() {
+            if (records.length === 0) {
+                activeSessionSelect.innerHTML = `<option value="">No hay cultos creados aún</option>`;
+                return;
+            }
+            activeSessionSelect.innerHTML = records.map(r =>
+                `<option value="${r.id}">${formatDate(r.date)} — ${r.type}</option>`
+            ).join("");
+            if (activeSessionId) activeSessionSelect.value = activeSessionId;
+        }
+
+        activeSessionSelect.addEventListener("change", (e) => {
+            activeSessionId = e.target.value;
+            localStorage.setItem("activeSessionId", activeSessionId);
+            renderActiveSession();
+        });
+
+        function renderActiveSession() {
+            const current = records.find(r => r.id === activeSessionId);
+            if (!current) {
+                noSessionBanner.classList.remove("hidden");
+                activeWorkspace.classList.add("hidden");
+                return;
+            }
+
+            noSessionBanner.classList.add("hidden");
+            activeWorkspace.classList.remove("hidden");
+            activeSessionBadge.textContent = `${formatDate(current.date)} • ${current.type}`;
+
+            // Solo actualizar los inputs de texto si el usuario no está escribiendo activamente en ellos
+            if (document.activeElement !== serviceLeaderInput) {
+                serviceLeaderInput.value = current.leader || "";
+            }
+            if (document.activeElement !== servicePreacherInput) {
+                servicePreacherInput.value = current.preacher || "";
+            }
+            if (document.activeElement !== serviceOfferingInput) {
+                serviceOfferingInput.value = current.offering || 0;
+            }
+
+            const b = current.brothers || 0;
+            const s = current.sisters || 0;
+            const v = current.visitors || 0;
+            const c = current.children || 0;
+            const vb = current.visitingBrothers || 0;
+
+            document.getElementById("brothers").textContent = b;
+            document.getElementById("sisters").textContent = s;
+            document.getElementById("visitors").textContent = v;
+            document.getElementById("children").textContent = c;
+            document.getElementById("visitingBrothers").textContent = vb;
+
+            document.getElementById("totalAttendees").textContent = b + s + v + c + vb;
+            document.getElementById("totalOffering").textContent = `$${(current.offering || 0).toLocaleString()}`;
+        }
+
+        // =========================================================================
+        // 4. ACTUALIZACIONES ATÓMICAS (SIN PISARSE ENTRE DISPOSITIVOS)
+        // =========================================================================
+        async function adjustCounter(field, delta) {
+            if (!activeSessionId) return;
+            const current = records.find(r => r.id === activeSessionId);
+            if (!current) return;
+
+            const currentVal = current[field] || 0;
+            if (delta < 0 && currentVal <= 0) return; // Evitar negativos
+
+            try {
+                const docRef = doc(db, "churchAttendanceRecords", activeSessionId);
+                await updateDoc(docRef, {
+                    [field]: increment(delta)
+                });
+            } catch (err) {
+                showToast("No se pudo actualizar el conteo", "error");
+            }
+        }
+
+        document.querySelectorAll(".increment").forEach(btn => {
+            btn.addEventListener("click", () => adjustCounter(btn.dataset.field, 1));
+        });
+
+        document.querySelectorAll(".decrement").forEach(btn => {
+            btn.addEventListener("click", () => adjustCounter(btn.dataset.field, -1));
+        });
+
+        saveGeneralBtn.addEventListener("click", async () => {
+            if (!activeSessionId) return;
+            try {
+                const docRef = doc(db, "churchAttendanceRecords", activeSessionId);
+                await updateDoc(docRef, {
+                    leader: serviceLeaderInput.value.trim(),
+                    preacher: servicePreacherInput.value.trim(),
+                    offering: parseInt(serviceOfferingInput.value) || 0
+                });
+                showToast("Datos generales sincronizados");
+            } catch (err) {
+                showToast("Error al guardar datos generales", "error");
+            }
+        });
+
+        // =========================================================================
+        // 5. CREAR NUEVO CULTO COMPARTIDO
+        // =========================================================================
+        const newSessionModal = document.getElementById("newSessionModal");
+        document.getElementById("openNewSessionBtn").addEventListener("click", () => {
+            document.getElementById("newServiceDate").value = new Date().toISOString().slice(0, 10);
+            newSessionModal.classList.remove("hidden");
+        });
+
+        document.getElementById("cancelNewSessionBtn").addEventListener("click", () => {
+            newSessionModal.classList.add("hidden");
+        });
+
+        document.getElementById("createNewSessionBtn").addEventListener("click", async () => {
+            const type = document.getElementById("newServiceType").value;
+            const date = document.getElementById("newServiceDate").value;
+
+            if (!type || !date) {
+                showToast("Selecciona el tipo de servicio y la fecha", "error");
+                return;
+            }
+
+            try {
+                const newDoc = await addDoc(recordsCol, {
+                    type,
+                    date,
+                    leader: "",
+                    preacher: "",
+                    offering: 0,
+                    brothers: 0,
+                    sisters: 0,
+                    visitors: 0,
+                    children: 0,
+                    visitingBrothers: 0,
+                    createdAt: serverTimestamp()
+                });
+                activeSessionId = newDoc.id;
+                localStorage.setItem("activeSessionId", activeSessionId);
+                newSessionModal.classList.add("hidden");
+                showToast("Nuevo culto abierto para todos los dispositivos");
+            } catch (err) {
+                showToast("Error al crear el culto", "error");
+            }
+        });
+
+        // =========================================================================
+        // 6. TABLA HISTÓRICA, ELIMINACIÓN, EXCEL Y ESTADÍSTICAS
+        // =========================================================================
+        function renderRecordsTable() {
+            const filterValue = filterRecords.value;
+            const filtered = filterValue === "all"
+                ? records
+                : records.filter(r => r.type === filterValue);
+
+            if (filtered.length === 0) {
+                recordsTable.innerHTML = `<tr><td colspan="12" class="py-4 text-center text-txtsecondary">No hay registros</td></tr>`;
+                return;
+            }
+
+            recordsTable.innerHTML = filtered.map(record => {
+                const total = (record.brothers || 0) + (record.sisters || 0) + (record.visitors || 0) +
+                              (record.children || 0) + (record.visitingBrothers || 0);
+                const isCurrent = record.id === activeSessionId;
+
+                return `
+                    <tr class="hover:bg-gray-700/50 transition ${isCurrent ? 'bg-accent/10' : ''}">
+                        <td class="py-3 px-3 whitespace-nowrap">${formatDate(record.date)}</td>
+                        <td class="py-3 px-3 font-medium">${record.type}</td>
+                        <td class="py-3 px-3">${record.leader || "-"}</td>
+                        <td class="py-3 px-3">${record.preacher || "-"}</td>
+                        <td class="py-3 px-3 text-center">${record.brothers || 0}</td>
+                        <td class="py-3 px-3 text-center">${record.sisters || 0}</td>
+                        <td class="py-3 px-3 text-center">${record.visitors || 0}</td>
+                        <td class="py-3 px-3 text-center">${record.children || 0}</td>
+                        <td class="py-3 px-3 text-center">${record.visitingBrothers || 0}</td>
+                        <td class="py-3 px-3 text-center font-bold text-accent">${total}</td>
+                        <td class="py-3 px-3 text-center">$${(record.offering || 0).toLocaleString()}</td>
+                        <td class="py-3 px-3 text-center whitespace-nowrap">
+                            <button class="select-session-btn p-1.5 text-blue-400 hover:text-blue-200" data-id="${record.id}" title="Abrir en toma en vivo">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-btn p-1.5 text-red-400 hover:text-red-200" data-id="${record.id}" title="Eliminar">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+
+            document.querySelectorAll(".select-session-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    activeSessionId = btn.dataset.id;
+                    localStorage.setItem("activeSessionId", activeSessionId);
+                    activeSessionSelect.value = activeSessionId;
+                    renderActiveSession();
+                    renderRecordsTable();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                });
+            });
+
+            document.querySelectorAll(".delete-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    recordIdToDelete = btn.dataset.id;
+                    document.getElementById("deleteModal").classList.remove("hidden");
+                });
+            });
+        }
+
+        filterRecords.addEventListener("change", renderRecordsTable);
+
+        document.getElementById("cancelDeleteBtn").addEventListener("click", () => {
+            recordIdToDelete = null;
+            document.getElementById("deleteModal").classList.add("hidden");
+        });
+
+        document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
+            if (!recordIdToDelete) return;
+            try {
+                await deleteDoc(doc(db, "churchAttendanceRecords", recordIdToDelete));
+                showToast("Registro eliminado");
+            } catch (err) {
+                showToast("Error al eliminar", "error");
+            } finally {
+                recordIdToDelete = null;
+                document.getElementById("deleteModal").classList.add("hidden");
+            }
+        });
+
+        document.getElementById("exportExcelBtn").addEventListener("click", () => {
+            const filterValue = filterRecords.value;
+            const filtered = filterValue === "all" ? records : records.filter(r => r.type === filterValue);
+            if (filtered.length === 0) {
+                showToast("No hay registros para exportar", "error");
+                return;
+            }
+
+            const headers = [
+                "Fecha", "Servicio", "Dirigió", "Predicó",
+                "Hermanos", "Hermanas", "Visitas", "Niños", "Hnos. Visitantes",
+                "Total Asistentes", "Ofrenda"
+            ];
+
+            const sanitize = (val) => {
+                const str = String(val ?? "");
+                return /("|,|\n)/g.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+            };
+
+            const rows = filtered.map(r => {
+                const total = (r.brothers || 0) + (r.sisters || 0) + (r.visitors || 0) + (r.children || 0) + (r.visitingBrothers || 0);
+                return [
+                    r.date, r.type, r.leader, r.preacher,
+                    r.brothers || 0, r.sisters || 0, r.visitors || 0, r.children || 0, r.visitingBrothers || 0,
+                    total, r.offering || 0
+                ].map(sanitize).join(",");
+            });
+
+            const csv = [headers.join(","), ...rows].join("\n");
+            const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `asistencia_cultos_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            showToast("Exportado a Excel (CSV)");
+        });
+
+        function updateStats() {
+            const sum = (field) => records.reduce((acc, r) => acc + (r[field] || 0), 0);
+            const b = sum("brothers");
+            const s = sum("sisters");
+            const v = sum("visitors");
+            const c = sum("children");
+            const vb = sum("visitingBrothers");
+            const totalOfferings = sum("offering");
+            const avg = records.length > 0 ? Math.round(totalOfferings / records.length) : 0;
+
+            document.getElementById("totalBrothers").textContent = b;
+            document.getElementById("totalSisters").textContent = s;
+            document.getElementById("totalVisitors").textContent = v;
+            document.getElementById("totalChildren").textContent = c;
+            document.getElementById("totalVisitingBrothers").textContent = vb;
+            document.getElementById("grandTotal").textContent = b + s + v + c + vb;
+            document.getElementById("totalAllOfferings").textContent = `$${totalOfferings.toLocaleString()}`;
+            document.getElementById("averageOffering").textContent = `$${avg.toLocaleString()}`;
+        }
+
+        function initializeChart() {
+            const ctx = document.getElementById("servicesChart").getContext("2d");
+            servicesChart = new Chart(ctx, {
+                type: "doughnut",
+                data: {
+                    labels: SERVICE_TYPES,
+                    datasets: [{
+                        data: SERVICE_TYPES.map(() => 0),
+                        backgroundColor: [
+                            "#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
+                            "#EC4899", "#14B8A6", "#F97316", "#6366F1", "#84CC16",
+                            "#06B6D4", "#D946EF", "#F43F5E", "#3B82F6", "#A855F7", "#22C55E"
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: "70%"
+                }
+            });
+        }
+
+        function updateChart() {
+            if (!servicesChart) return;
+            servicesChart.data.datasets[0].data = SERVICE_TYPES.map(
+                type => records.filter(r => r.type === type).length
+            );
+            servicesChart.update();
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return "-";
+            const date = new Date(dateString + "T00:00:00");
+            return date.toLocaleDateString("es-ES", { year: "numeric", month: "short", day: "numeric" });
+        }
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById("toast");
+            document.getElementById("toastMessage").textContent = message;
+            toast.classList.toggle("bg-red-600", type === "error");
+            toast.classList.toggle("bg-green-600", type !== "error");
+            toast.classList.remove("hidden");
+            setTimeout(() => toast.classList.add("hidden"), 3000);
+        }
+
+        populateServiceSelects();
+        initializeChart();
+    </script>
+</body>
+</html>
