@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asistencia a Cultos - PLAYON</title>
+    <title>Asistencia a Cultos - Sincronizado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style type="text/tailwindcss">
@@ -47,32 +47,28 @@
         <!-- Header -->
         <header class="flex flex-wrap justify-between items-center gap-4 mb-6">
             <div>
-              <h1 class="text-2xl md:text-3xl font-bold text-accent flex items-center gap-3">
-<img 
-  src="./LOGO_IPUC.webp" 
-  alt="Logo Iglesia" 
-  class="w-20 h-20 object-contain" 
-  onerror="this.style.display='none'; this.parentElement.innerHTML='<svg class=&quot;w-5 h-5 inline-block&quot; fill=&quot;currentColor&quot; viewBox=&quot;0 0 24 24&quot;><path d=&quot;M12 2L2 12h3v8h14v-8h3L12 2zm0 2.84L17 9.84V18h-3v-5h-4v5H7V9.84l5-5z&quot;/></svg>';"
->
-    Control de Asistencia
-</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-accent flex items-center gap-2">
+                    <i class="fa-solid fa-church"></i>
+                    Control de Asistencia
+                </h1>
                 <p id="connectionStatus" class="text-xs text-yellow-400 mt-1 flex items-center gap-1">
                     <i class="fas fa-circle text-[8px]"></i> Conectando a la nube...
                 </p>
             </div>
 
-            <div class="flex items-center gap-3">
-                <!-- Selector de Rol por Dispositivo -->
-                <div class="flex items-center gap-2 bg-secondary px-3 py-2 rounded-lg border border-gray-600">
-                    <i class="fas fa-user-tag text-accent text-sm"></i>
-                    <select id="roleSelector" class="bg-transparent text-sm outline-none cursor-pointer">
-                        <option value="all" class="bg-secondary">Vista: Completa (Todo)</option>
-                        <option value="brothers_general" class="bg-secondary">Rol: Hermanos y General</option>
-                        <option value="sisters" class="bg-secondary">Rol: Solo Hermanas</option>
-                        <option value="visitors_children" class="bg-secondary">Rol: Visitas y Niños</option>
-                        <option value="readonly" class="bg-secondary">Vista: Solo Lectura</option>
-                    </select>
+            <div class="flex flex-wrap items-center gap-2.5">
+                <!-- Badge de Rol Asignado (no editable libremente si está bloqueado por admin) -->
+                <div class="flex items-center gap-2 bg-secondary px-3 py-2 rounded-lg border border-gray-600 text-sm">
+                    <i class="fas fa-user-tag text-accent"></i>
+                    <span class="text-txtsecondary">Rol:</span>
+                    <strong id="currentRoleBadge" class="text-accent">Cargando...</strong>
                 </div>
+
+                <!-- Botón Panel Admin / Desbloquear Admin -->
+                <button id="adminPanelBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition">
+                    <i class="fas fa-user-shield"></i>
+                    <span id="adminBtnLabel">Modo Admin</span>
+                </button>
 
                 <button id="themeToggle" class="p-2.5 rounded-lg bg-secondary border border-gray-600 hover:bg-accent hover:text-primary transition" title="Cambiar tema">
                     <i class="fas fa-moon dark:hidden"></i>
@@ -81,9 +77,42 @@
             </div>
         </header>
 
+        <!-- Panel de Administración de Dispositivos y Roles (solo visible para Admin) -->
+        <section id="adminSection" class="bg-secondary rounded-lg shadow-xl p-6 mb-6 border border-purple-500/50 hidden">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-purple-300 flex items-center gap-2">
+                        <i class="fas fa-sliders-h"></i> Control de Administrador — Asignación de Roles
+                    </h2>
+                    <p class="text-xs text-txtsecondary mt-1">
+                        Asigna o cambia el rol de cada dispositivo conectado. Los cambios se aplican en tiempo real.
+                    </p>
+                </div>
+                <div class="text-xs bg-primary px-3 py-2 rounded-lg border border-gray-600">
+                    Este dispositivo: <strong id="myDeviceLabel" class="text-accent"></strong>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-primary rounded-lg overflow-hidden text-sm">
+                    <thead>
+                        <tr class="bg-purple-700 text-white">
+                            <th class="py-2.5 px-4 text-left">Dispositivo / Etiqueta</th>
+                            <th class="py-2.5 px-4 text-left">ID</th>
+                            <th class="py-2.5 px-4 text-left">Rol Asignado</th>
+                            <th class="py-2.5 px-4 text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="devicesTableBody" class="divide-y divide-gray-700">
+                        <tr><td colspan="4" class="py-4 text-center text-txtsecondary">Cargando dispositivos...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- Barra de Sesión de Culto Activo -->
         <section class="bg-secondary rounded-lg shadow-lg p-4 mb-6 border-l-4 border-accent">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div class="flex-1">
                     <label class="block text-xs uppercase tracking-wider text-txtsecondary mb-1">
                         Culto en curso (sincronizado entre dispositivos)
@@ -92,8 +121,11 @@
                         <option value="">Cargando cultos...</option>
                     </select>
                 </div>
-                <div class="flex gap-2 items-end">
-                    <button id="openNewSessionBtn" class="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg flex items-center gap-2 transition text-sm font-medium whitespace-nowrap">
+                <div class="flex flex-wrap gap-2">
+                    <button id="editSessionBtn" class="admin-or-general bg-amber-600 hover:bg-amber-700 text-white py-2.5 px-4 rounded-lg flex items-center gap-2 transition text-sm font-medium whitespace-nowrap">
+                        <i class="fas fa-edit"></i> Editar Culto
+                    </button>
+                    <button id="openNewSessionBtn" class="admin-or-general bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg flex items-center gap-2 transition text-sm font-medium whitespace-nowrap">
                         <i class="fas fa-plus-circle"></i> Abrir Nuevo Culto
                     </button>
                 </div>
@@ -105,7 +137,7 @@
             <div id="noSessionBanner" class="text-center py-8 text-txtsecondary hidden">
                 <i class="fas fa-calendar-plus text-4xl text-accent mb-3"></i>
                 <p class="text-lg font-medium">No hay un culto seleccionado</p>
-                <p class="text-sm mt-1">Selecciona uno arriba o pulsa <strong>"Abrir Nuevo Culto"</strong> para que todos los dispositivos empiecen a registrar.</p>
+                <p class="text-sm mt-1">Selecciona uno arriba o pulsa <strong>"Abrir Nuevo Culto"</strong> para comenzar.</p>
             </div>
 
             <div id="activeWorkspace" class="grid md:grid-cols-2 gap-6">
@@ -328,23 +360,38 @@
         </section>
     </div>
 
-    <!-- Modal para Abrir Nuevo Culto -->
-    <div id="newSessionModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+    <!-- Modal Nuevo / Editar Culto en Curso -->
+    <div id="sessionModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
         <div class="bg-secondary rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
-            <h3 class="text-xl font-bold text-accent mb-4">Abrir Nuevo Culto Compartido</h3>
+            <h3 id="sessionModalTitle" class="text-xl font-bold text-accent mb-4">Abrir Nuevo Culto Compartido</h3>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm text-txtsecondary mb-1">Tipo de Servicio</label>
-                    <select id="newServiceType" class="w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none"></select>
+                    <select id="modalServiceType" class="w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none"></select>
                 </div>
                 <div>
                     <label class="block text-sm text-txtsecondary mb-1">Fecha</label>
-                    <input type="date" id="newServiceDate" class="w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none">
+                    <input type="date" id="modalServiceDate" class="w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-accent outline-none">
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-6">
-                <button id="cancelNewSessionBtn" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">Cancelar</button>
-                <button id="createNewSessionBtn" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition">Crear y Sincronizar</button>
+                <button id="cancelSessionModalBtn" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">Cancelar</button>
+                <button id="submitSessionModalBtn" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal PIN Administrador -->
+    <div id="adminPinModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-secondary rounded-lg p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 class="text-xl font-bold text-purple-300 mb-2 flex items-center gap-2">
+                <i class="fas fa-lock"></i> Acceso Administrador
+            </h3>
+            <p class="text-xs text-txtsecondary mb-4">Ingresa tu clave de administrador para asignar roles a los dispositivos.</p>
+            <input type="password" id="adminPinInput" placeholder="Clave de administrador" class="w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-purple-400 outline-none mb-4">
+            <div class="flex justify-end gap-2">
+                <button id="cancelPinBtn" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition text-sm">Cancelar</button>
+                <button id="confirmPinBtn" class="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium transition text-sm">Entrar</button>
             </div>
         </div>
     </div>
@@ -374,27 +421,30 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import {
-            getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+            getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc,
             onSnapshot, query, orderBy, increment, serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // =========================================================================
-        // 1. PEGA AQUÍ LA CONFIGURACIÓN DE TU PROYECTO FIREBASE
+        // 1. CONFIGURACIÓN FIREBASE Y CLAVE DE ADMINISTRADOR
         // =========================================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDkA_s-s3jggfE7PXpBK8em00rPo4p2z48",
-            authDomain: "asistencias-de-cultos-ipuc.firebaseapp.com",
-            projectId:  "asistencias-de-cultos-ipuc",
-            storageBucket: "asistencias-de-cultos-ipuc.firebasestorage.app",
-            messagingSenderId: "742374152833",
-            appId: "1:742374152833:web:8c8f45be197edf15dfcb80"
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_PROYECTO.firebaseapp.com",
+            projectId: "TU_PROYECTO",
+            storageBucket: "TU_PROYECTO.appspot.com",
+            messagingSenderId: "TU_SENDER_ID",
+            appId: "TU_APP_ID"
         };
+
+        // Cambia esta clave antes de publicar
+        const ADMIN_PIN = "13579";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const recordsCol = collection(db, "churchAttendanceRecords");
+        const devicesCol = collection(db, "deviceRoles");
 
-        // Catálogo unificado de servicios (16 tipos)
         const SERVICE_TYPES = [
             "Escuela Dominical",
             "Culto Evangelístico",
@@ -414,15 +464,37 @@
             "Confraternidad Jóvenes (Fin de Año)"
         ];
 
-        // Estado global sincronizado
+        const ROLE_LABELS = {
+            admin: "Administrador",
+            all: "Completa (Todo)",
+            brothers_general: "Hermanos y General",
+            sisters: "Solo Hermanas",
+            visitors_children: "Visitas y Niños",
+            readonly: "Solo Lectura"
+        };
+
+        // Identificador único de este dispositivo
+        let deviceId = localStorage.getItem("churchDeviceId");
+        if (!deviceId) {
+            deviceId = "dev_" + Math.random().toString(36).substring(2, 8);
+            localStorage.setItem("churchDeviceId", deviceId);
+        }
+
+        // Estado global
         let records = [];
+        let devicesList = [];
         let activeSessionId = localStorage.getItem("activeSessionId") || null;
+        let assignedRole = "all"; // Rol asignado desde Firestore por el administrador
+        let isAdminUnlocked = sessionStorage.getItem("adminUnlocked") === "true";
+        let modalMode = "create"; // "create" | "edit"
         let recordIdToDelete = null;
         let servicesChart = null;
 
-        // Referencias DOM
+        // DOM
         const connectionStatus = document.getElementById("connectionStatus");
-        const roleSelector = document.getElementById("roleSelector");
+        const currentRoleBadge = document.getElementById("currentRoleBadge");
+        const adminSection = document.getElementById("adminSection");
+        const adminBtnLabel = document.getElementById("adminBtnLabel");
         const activeSessionSelect = document.getElementById("activeSessionSelect");
         const noSessionBanner = document.getElementById("noSessionBanner");
         const activeWorkspace = document.getElementById("activeWorkspace");
@@ -436,10 +508,10 @@
         const filterRecords = document.getElementById("filterRecords");
         const recordsTable = document.getElementById("recordsTable");
 
-        // Inicializar selectores de tipos de servicio
+        // Inicializar selects
         function populateServiceSelects() {
-            const newServiceSelect = document.getElementById("newServiceType");
-            newServiceSelect.innerHTML = `<option value="">Seleccionar...</option>` +
+            const modalSelect = document.getElementById("modalServiceType");
+            modalSelect.innerHTML = `<option value="">Seleccionar...</option>` +
                 SERVICE_TYPES.map(t => `<option value="${t}">${t}</option>`).join("");
 
             filterRecords.innerHTML = `<option value="all">Todos los servicios</option>` +
@@ -457,19 +529,62 @@
         });
 
         // =========================================================================
-        // 2. SELECTOR DE ROL POR DISPOSITIVO (SIN LÍMITE DE USUARIOS)
+        // 2. REGISTRO DE DISPOSITIVO Y ASIGNACIÓN DE ROLES POR ADMINISTRADOR
         // =========================================================================
-        const savedRole = localStorage.getItem("deviceRole") || "all";
-        roleSelector.value = savedRole;
+        async function registerCurrentDeviceIfNeeded() {
+            try {
+                const devRef = doc(db, "deviceRoles", deviceId);
+                await setDoc(devRef, {
+                    deviceId,
+                    label: localStorage.getItem("deviceLabel") || `Dispositivo ${deviceId.slice(-4).toUpperCase()}`,
+                    role: isAdminUnlocked ? "admin" : "all",
+                    lastSeen: serverTimestamp()
+                }, { merge: true });
+            } catch (e) {
+                console.error(e);
+            }
+        }
 
-        function applyRoleView(role) {
-            localStorage.setItem("deviceRole", role);
+        onSnapshot(devicesCol, (snapshot) => {
+            devicesList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            const mine = devicesList.find(d => d.id === deviceId);
+
+            if (mine && mine.role) {
+                assignedRole = mine.role;
+                if (assignedRole === "admin") {
+                    isAdminUnlocked = true;
+                    sessionStorage.setItem("adminUnlocked", "true");
+                }
+            }
+
+            applyRolePermissions();
+            renderDevicesAdminTable();
+        });
+
+        function getEffectiveRole() {
+            if (isAdminUnlocked) return "admin";
+            return assignedRole || "all";
+        }
+
+        function applyRolePermissions() {
+            const role = getEffectiveRole();
+            currentRoleBadge.textContent = ROLE_LABELS[role] || role;
+            adminSection.classList.toggle("hidden", !isAdminUnlocked);
+            adminBtnLabel.textContent = isAdminUnlocked ? "Salir Admin" : "Modo Admin";
+            document.getElementById("myDeviceLabel").textContent = `${deviceId}`;
+
             const generalSection = document.getElementById("generalSection");
             const counterRows = document.querySelectorAll(".counter-row");
             const isReadOnly = role === "readonly";
+            const canManageSessions = role === "admin" || role === "all" || role === "brothers_general";
 
-            // Mostrar/ocultar sección de datos generales
-            if (role === "all" || role === "brothers_general" || isReadOnly) {
+            // Botones de Abrir / Editar culto en curso según rol asignado
+            document.querySelectorAll(".admin-or-general").forEach(btn => {
+                btn.classList.toggle("hidden", !canManageSessions);
+            });
+
+            // Sección de datos generales
+            if (role === "admin" || role === "all" || role === "brothers_general" || isReadOnly) {
                 generalSection.classList.remove("hidden");
             } else {
                 generalSection.classList.add("hidden");
@@ -483,30 +598,127 @@
                 }
             });
 
-            // Filtrar contadores visibles según rol
+            // Contadores visibles según rol asignado por el admin
             counterRows.forEach(row => {
                 const group = row.dataset.group;
                 let visible = false;
 
-                if (role === "all" || isReadOnly) visible = true;
+                if (role === "admin" || role === "all" || isReadOnly) visible = true;
                 else if (role === "brothers_general" && (group === "brothers" || group === "visitingBrothers")) visible = true;
                 else if (role === "sisters" && group === "sisters") visible = true;
                 else if (role === "visitors_children" && (group === "visitors" || group === "children")) visible = true;
 
                 row.classList.toggle("hidden", !visible);
 
-                // Ocultar botones + y - si es modo solo lectura
                 row.querySelectorAll("button").forEach(btn => {
                     btn.classList.toggle("hidden", isReadOnly);
                 });
             });
         }
 
-        roleSelector.addEventListener("change", (e) => applyRoleView(e.target.value));
-        applyRoleView(savedRole);
+        function renderDevicesAdminTable() {
+            const tbody = document.getElementById("devicesTableBody");
+            if (!tbody || !isAdminUnlocked) return;
+
+            if (devicesList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-txtsecondary">No hay dispositivos registrados</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = devicesList.map(dev => {
+                const isMe = dev.id === deviceId;
+                const optionsHtml = Object.entries(ROLE_LABELS).map(([key, label]) =>
+                    `<option value="${key}" ${dev.role === key ? "selected" : ""}>${label}</option>`
+                ).join("");
+
+                return `
+                    <tr class="hover:bg-gray-800/40">
+                        <td class="py-2.5 px-4">
+                            <input type="text" value="${dev.label || ""}" data-label-id="${dev.id}"
+                                class="device-label-input bg-secondary border border-gray-600 rounded px-2 py-1 text-sm w-44 outline-none focus:border-accent">
+                            ${isMe ? '<span class="ml-2 text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">Tú</span>' : ''}
+                        </td>
+                        <td class="py-2.5 px-4 font-mono text-xs text-txtsecondary">${dev.id}</td>
+                        <td class="py-2.5 px-4">
+                            <select data-role-id="${dev.id}" class="device-role-select bg-secondary border border-gray-600 rounded px-2.5 py-1.5 text-sm outline-none focus:border-purple-400">
+                                ${optionsHtml}
+                            </select>
+                        </td>
+                        <td class="py-2.5 px-4 text-center">
+                            ${!isMe ? `<button data-remove-dev="${dev.id}" class="remove-dev-btn text-red-400 hover:text-red-200 px-2 py-1" title="Quitar dispositivo"><i class="fas fa-trash"></i></button>` : '<span class="text-xs text-txtsecondary">—</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+
+            tbody.querySelectorAll(".device-role-select").forEach(select => {
+                select.addEventListener("change", async (e) => {
+                    const targetId = e.target.dataset.roleId;
+                    const newRole = e.target.value;
+                    await updateDoc(doc(db, "deviceRoles", targetId), { role: newRole });
+                    showToast(`Rol actualizado a "${ROLE_LABELS[newRole]}"`);
+                });
+            });
+
+            tbody.querySelectorAll(".device-label-input").forEach(input => {
+                input.addEventListener("change", async (e) => {
+                    const targetId = e.target.dataset.labelId;
+                    const newLabel = e.target.value.trim();
+                    await updateDoc(doc(db, "deviceRoles", targetId), { label: newLabel });
+                    if (targetId === deviceId) localStorage.setItem("deviceLabel", newLabel);
+                    showToast("Etiqueta de dispositivo guardada");
+                });
+            });
+
+            tbody.querySelectorAll(".remove-dev-btn").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    await deleteDoc(doc(db, "deviceRoles", btn.dataset.removeDev));
+                    showToast("Dispositivo eliminado de la lista");
+                });
+            });
+        }
+
+        // Modal PIN Administrador
+        const adminPinModal = document.getElementById("adminPinModal");
+        const adminPinInput = document.getElementById("adminPinInput");
+
+        document.getElementById("adminPanelBtn").addEventListener("click", async () => {
+            if (isAdminUnlocked) {
+                isAdminUnlocked = false;
+                sessionStorage.removeItem("adminUnlocked");
+                if (assignedRole === "admin") {
+                    assignedRole = "all";
+                    await updateDoc(doc(db, "deviceRoles", deviceId), { role: "all" });
+                }
+                applyRolePermissions();
+                showToast("Saliste del modo administrador");
+            } else {
+                adminPinInput.value = "";
+                adminPinModal.classList.remove("hidden");
+                adminPinInput.focus();
+            }
+        });
+
+        document.getElementById("cancelPinBtn").addEventListener("click", () => {
+            adminPinModal.classList.add("hidden");
+        });
+
+        document.getElementById("confirmPinBtn").addEventListener("click", async () => {
+            if (adminPinInput.value === ADMIN_PIN) {
+                isAdminUnlocked = true;
+                sessionStorage.setItem("adminUnlocked", "true");
+                adminPinModal.classList.add("hidden");
+                await setDoc(doc(db, "deviceRoles", deviceId), { role: "admin" }, { merge: true });
+                applyRolePermissions();
+                renderDevicesAdminTable();
+                showToast("Modo administrador activado");
+            } else {
+                showToast("Clave de administrador incorrecta", "error");
+            }
+        });
 
         // =========================================================================
-        // 3. ESCUCHA EN TIEMPO REAL DESDE FIRESTORE
+        // 3. SINCRONIZACIÓN EN TIEMPO REAL DE CULTOS
         // =========================================================================
         const q = query(recordsCol, orderBy("date", "desc"));
         onSnapshot(q, (snapshot) => {
@@ -515,7 +727,6 @@
 
             records = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-            // Si no hay sesión elegida o fue borrada, seleccionar automáticamente el culto más reciente
             if (records.length > 0 && (!activeSessionId || !records.some(r => r.id === activeSessionId))) {
                 activeSessionId = records[0].id;
                 localStorage.setItem("activeSessionId", activeSessionId);
@@ -563,16 +774,9 @@
             activeWorkspace.classList.remove("hidden");
             activeSessionBadge.textContent = `${formatDate(current.date)} • ${current.type}`;
 
-            // Solo actualizar los inputs de texto si el usuario no está escribiendo activamente en ellos
-            if (document.activeElement !== serviceLeaderInput) {
-                serviceLeaderInput.value = current.leader || "";
-            }
-            if (document.activeElement !== servicePreacherInput) {
-                servicePreacherInput.value = current.preacher || "";
-            }
-            if (document.activeElement !== serviceOfferingInput) {
-                serviceOfferingInput.value = current.offering || 0;
-            }
+            if (document.activeElement !== serviceLeaderInput) serviceLeaderInput.value = current.leader || "";
+            if (document.activeElement !== servicePreacherInput) servicePreacherInput.value = current.preacher || "";
+            if (document.activeElement !== serviceOfferingInput) serviceOfferingInput.value = current.offering || 0;
 
             const b = current.brothers || 0;
             const s = current.sisters || 0;
@@ -591,19 +795,18 @@
         }
 
         // =========================================================================
-        // 4. ACTUALIZACIONES ATÓMICAS (SIN PISARSE ENTRE DISPOSITIVOS)
+        // 4. ACTUALIZACIONES ATÓMICAS DE CONTEO Y DATOS GENERALES
         // =========================================================================
         async function adjustCounter(field, delta) {
-            if (!activeSessionId) return;
+            if (!activeSessionId || getEffectiveRole() === "readonly") return;
             const current = records.find(r => r.id === activeSessionId);
             if (!current) return;
 
             const currentVal = current[field] || 0;
-            if (delta < 0 && currentVal <= 0) return; // Evitar negativos
+            if (delta < 0 && currentVal <= 0) return;
 
             try {
-                const docRef = doc(db, "churchAttendanceRecords", activeSessionId);
-                await updateDoc(docRef, {
+                await updateDoc(doc(db, "churchAttendanceRecords", activeSessionId), {
                     [field]: increment(delta)
                 });
             } catch (err) {
@@ -620,10 +823,9 @@
         });
 
         saveGeneralBtn.addEventListener("click", async () => {
-            if (!activeSessionId) return;
+            if (!activeSessionId || getEffectiveRole() === "readonly") return;
             try {
-                const docRef = doc(db, "churchAttendanceRecords", activeSessionId);
-                await updateDoc(docRef, {
+                await updateDoc(doc(db, "churchAttendanceRecords", activeSessionId), {
                     leader: serviceLeaderInput.value.trim(),
                     preacher: servicePreacherInput.value.trim(),
                     offering: parseInt(serviceOfferingInput.value) || 0
@@ -635,21 +837,44 @@
         });
 
         // =========================================================================
-        // 5. CREAR NUEVO CULTO COMPARTIDO
+        // 5. CREAR O EDITAR CULTO EN CURSO (SINCRONIZADO)
         // =========================================================================
-        const newSessionModal = document.getElementById("newSessionModal");
+        const sessionModal = document.getElementById("sessionModal");
+        const sessionModalTitle = document.getElementById("sessionModalTitle");
+        const modalServiceType = document.getElementById("modalServiceType");
+        const modalServiceDate = document.getElementById("modalServiceDate");
+        const submitSessionModalBtn = document.getElementById("submitSessionModalBtn");
+
         document.getElementById("openNewSessionBtn").addEventListener("click", () => {
-            document.getElementById("newServiceDate").value = new Date().toISOString().slice(0, 10);
-            newSessionModal.classList.remove("hidden");
+            modalMode = "create";
+            sessionModalTitle.textContent = "Abrir Nuevo Culto Compartido";
+            submitSessionModalBtn.textContent = "Crear y Sincronizar";
+            modalServiceType.value = "";
+            modalServiceDate.value = new Date().toISOString().slice(0, 10);
+            sessionModal.classList.remove("hidden");
         });
 
-        document.getElementById("cancelNewSessionBtn").addEventListener("click", () => {
-            newSessionModal.classList.add("hidden");
+        document.getElementById("editSessionBtn").addEventListener("click", () => {
+            const current = records.find(r => r.id === activeSessionId);
+            if (!current) {
+                showToast("No hay un culto en curso para editar", "error");
+                return;
+            }
+            modalMode = "edit";
+            sessionModalTitle.textContent = "Editar Culto en Curso";
+            submitSessionModalBtn.textContent = "Guardar Cambios";
+            modalServiceType.value = current.type || "";
+            modalServiceDate.value = current.date || "";
+            sessionModal.classList.remove("hidden");
         });
 
-        document.getElementById("createNewSessionBtn").addEventListener("click", async () => {
-            const type = document.getElementById("newServiceType").value;
-            const date = document.getElementById("newServiceDate").value;
+        document.getElementById("cancelSessionModalBtn").addEventListener("click", () => {
+            sessionModal.classList.add("hidden");
+        });
+
+        submitSessionModalBtn.addEventListener("click", async () => {
+            const type = modalServiceType.value;
+            const date = modalServiceDate.value;
 
             if (!type || !date) {
                 showToast("Selecciona el tipo de servicio y la fecha", "error");
@@ -657,25 +882,33 @@
             }
 
             try {
-                const newDoc = await addDoc(recordsCol, {
-                    type,
-                    date,
-                    leader: "",
-                    preacher: "",
-                    offering: 0,
-                    brothers: 0,
-                    sisters: 0,
-                    visitors: 0,
-                    children: 0,
-                    visitingBrothers: 0,
-                    createdAt: serverTimestamp()
-                });
-                activeSessionId = newDoc.id;
-                localStorage.setItem("activeSessionId", activeSessionId);
-                newSessionModal.classList.add("hidden");
-                showToast("Nuevo culto abierto para todos los dispositivos");
+                if (modalMode === "edit" && activeSessionId) {
+                    await updateDoc(doc(db, "churchAttendanceRecords", activeSessionId), {
+                        type,
+                        date
+                    });
+                    showToast("Culto en curso actualizado en todos los dispositivos");
+                } else {
+                    const newDoc = await addDoc(recordsCol, {
+                        type,
+                        date,
+                        leader: "",
+                        preacher: "",
+                        offering: 0,
+                        brothers: 0,
+                        sisters: 0,
+                        visitors: 0,
+                        children: 0,
+                        visitingBrothers: 0,
+                        createdAt: serverTimestamp()
+                    });
+                    activeSessionId = newDoc.id;
+                    localStorage.setItem("activeSessionId", activeSessionId);
+                    showToast("Nuevo culto abierto para todos los dispositivos");
+                }
+                sessionModal.classList.add("hidden");
             } catch (err) {
-                showToast("Error al crear el culto", "error");
+                showToast("Error al guardar el culto", "error");
             }
         });
 
@@ -692,6 +925,8 @@
                 recordsTable.innerHTML = `<tr><td colspan="12" class="py-4 text-center text-txtsecondary">No hay registros</td></tr>`;
                 return;
             }
+
+            const canDelete = getEffectiveRole() !== "readonly";
 
             recordsTable.innerHTML = filtered.map(record => {
                 const total = (record.brothers || 0) + (record.sisters || 0) + (record.visitors || 0) +
@@ -715,9 +950,7 @@
                             <button class="select-session-btn p-1.5 text-blue-400 hover:text-blue-200" data-id="${record.id}" title="Abrir en toma en vivo">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="delete-btn p-1.5 text-red-400 hover:text-red-200" data-id="${record.id}" title="Eliminar">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
+                            ${canDelete ? `<button class="delete-btn p-1.5 text-red-400 hover:text-red-200" data-id="${record.id}" title="Eliminar"><i class="fas fa-trash-alt"></i></button>` : ""}
                         </td>
                     </tr>
                 `;
@@ -870,6 +1103,7 @@
 
         populateServiceSelects();
         initializeChart();
+        registerCurrentDeviceIfNeeded();
     </script>
 </body>
 </html>
