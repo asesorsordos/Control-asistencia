@@ -48,14 +48,7 @@
         <header class="flex flex-wrap justify-between items-center gap-4 mb-6">
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold text-accent flex items-center gap-2">
-                    <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-white shadow-md overflow-hidden border border-slate-700">
-<img 
-  src="./LOGO_IPUC.webp" 
-  alt="Logo Iglesia" 
-  class="w-full h-full object-contain" 
-  onerror="this.style.display='none'; this.parentElement.innerHTML='<svg class=&quot;w-5 h-5 inline-block&quot; fill=&quot;currentColor&quot; viewBox=&quot;0 0 24 24&quot;><path d=&quot;M12 2L2 12h3v8h14v-8h3L12 2zm0 2.84L17 9.84V18h-3v-5h-4v5H7V9.84l5-5z&quot;/></svg>';"
->
-                </div>
+                    <i class="fa-solid fa-church"></i>
                     Control de Asistencia
                 </h1>
                 <p id="connectionStatus" class="text-xs text-yellow-400 mt-1 flex items-center gap-1">
@@ -64,7 +57,14 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5">
-                <!-- Badge de Rol Asignado (no editable libremente si está bloqueado por admin) -->
+                <!-- Nombre del Dispositivo Asignado por el Administrador -->
+                <div class="flex items-center gap-2 bg-secondary px-3 py-2 rounded-lg border border-gray-600 text-sm" title="Nombre asignado por el administrador">
+                    <i class="fas fa-mobile-alt text-accent"></i>
+                    <span class="text-txtsecondary">Equipo:</span>
+                    <strong id="headerDeviceName" class="text-txtprimary">Cargando...</strong>
+                </div>
+
+                <!-- Badge de Rol Asignado -->
                 <div class="flex items-center gap-2 bg-secondary px-3 py-2 rounded-lg border border-gray-600 text-sm">
                     <i class="fas fa-user-tag text-accent"></i>
                     <span class="text-txtsecondary">Rol:</span>
@@ -89,14 +89,14 @@
             <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                 <div>
                     <h2 class="text-xl font-bold text-purple-300 flex items-center gap-2">
-                        <i class="fas fa-sliders-h"></i> Control de Administrador — Asignación de Roles
+                        <i class="fas fa-sliders-h"></i> Control de Administrador — Equipos y Roles
                     </h2>
                     <p class="text-xs text-txtsecondary mt-1">
-                        Asigna o cambia el rol de cada dispositivo conectado. Los cambios se aplican en tiempo real.
+                        Edita el nombre de cada equipo y asigna su rol. El nombre guardado aquí prevalece en cada dispositivo al instante.
                     </p>
                 </div>
                 <div class="text-xs bg-primary px-3 py-2 rounded-lg border border-gray-600">
-                    Este dispositivo: <strong id="myDeviceLabel" class="text-accent"></strong>
+                    ID de este equipo: <strong id="myDeviceLabel" class="text-accent font-mono"></strong>
                 </div>
             </div>
 
@@ -104,8 +104,8 @@
                 <table class="min-w-full bg-primary rounded-lg overflow-hidden text-sm">
                     <thead>
                         <tr class="bg-purple-700 text-white">
-                            <th class="py-2.5 px-4 text-left">Dispositivo / Etiqueta</th>
-                            <th class="py-2.5 px-4 text-left">ID</th>
+                            <th class="py-2.5 px-4 text-left">Nombre del Equipo</th>
+                            <th class="py-2.5 px-4 text-left">ID Técnico</th>
                             <th class="py-2.5 px-4 text-left">Rol Asignado</th>
                             <th class="py-2.5 px-4 text-center">Acción</th>
                         </tr>
@@ -394,7 +394,7 @@
             <h3 class="text-xl font-bold text-purple-300 mb-2 flex items-center gap-2">
                 <i class="fas fa-lock"></i> Acceso Administrador
             </h3>
-            <p class="text-xs text-txtsecondary mb-4">Ingresa tu clave de administrador para asignar roles a los dispositivos.</p>
+            <p class="text-xs text-txtsecondary mb-4">Ingresa tu clave de administrador para gestionar los equipos y sus roles.</p>
             <input type="password" id="adminPinInput" placeholder="Clave de administrador" class="w-full p-3 rounded-lg bg-primary border border-gray-600 focus:border-purple-400 outline-none mb-4">
             <div class="flex justify-end gap-2">
                 <button id="cancelPinBtn" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition text-sm">Cancelar</button>
@@ -428,7 +428,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import {
-            getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc,
+            getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
             onSnapshot, query, orderBy, increment, serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -436,16 +436,16 @@
         // 1. CONFIGURACIÓN FIREBASE Y CLAVE DE ADMINISTRADOR
         // =========================================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDkA_s-s3jggfE7PXpBK8em00rPo4p2z48",
+            apiKey:"AIzaSyDkA_s-s3jggfE7PXpBK8em00rPo4p2z48",
             authDomain: "asistencias-de-cultos-ipuc.firebaseapp.com",
-            projectId: "asistencias-de-cultos-ipuc",
-            storageBucket:"asistencias-de-cultos-ipuc.firebasestorage.app",
+            projectId:"asistencias-de-cultos-ipuc",
+            storageBucket: "asistencias-de-cultos-ipuc.firebasestorage.app",
             messagingSenderId: "742374152833",
-            appId: "1:742374152833:web:8c8f45be197edf15dfcb80"
+            appId:  "1:742374152833:web:8c8f45be197edf15dfcb80"
         };
 
         // Cambia esta clave antes de publicar
-        const ADMIN_PIN = "13579";
+        const ADMIN_PIN = "1234";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -487,18 +487,22 @@
             localStorage.setItem("churchDeviceId", deviceId);
         }
 
+        const defaultFallbackName = `Equipo ${deviceId.slice(-4).toUpperCase()}`;
+
         // Estado global
         let records = [];
         let devicesList = [];
         let activeSessionId = localStorage.getItem("activeSessionId") || null;
-        let assignedRole = "all"; // Rol asignado desde Firestore por el administrador
+        let assignedRole = "all";
+        let assignedDeviceName = localStorage.getItem("deviceLabel") || defaultFallbackName;
         let isAdminUnlocked = sessionStorage.getItem("adminUnlocked") === "true";
-        let modalMode = "create"; // "create" | "edit"
+        let modalMode = "create";
         let recordIdToDelete = null;
         let servicesChart = null;
 
         // DOM
         const connectionStatus = document.getElementById("connectionStatus");
+        const headerDeviceName = document.getElementById("headerDeviceName");
         const currentRoleBadge = document.getElementById("currentRoleBadge");
         const adminSection = document.getElementById("adminSection");
         const adminBtnLabel = document.getElementById("adminBtnLabel");
@@ -514,6 +518,8 @@
 
         const filterRecords = document.getElementById("filterRecords");
         const recordsTable = document.getElementById("recordsTable");
+
+        headerDeviceName.textContent = assignedDeviceName;
 
         // Inicializar selects
         function populateServiceSelects() {
@@ -536,19 +542,29 @@
         });
 
         // =========================================================================
-        // 2. REGISTRO DE DISPOSITIVO Y ASIGNACIÓN DE ROLES POR ADMINISTRADOR
+        // 2. REGISTRO Y SINCRONIZACIÓN DE NOMBRE Y ROL DEL DISPOSITIVO
         // =========================================================================
         async function registerCurrentDeviceIfNeeded() {
             try {
                 const devRef = doc(db, "deviceRoles", deviceId);
-                await setDoc(devRef, {
-                    deviceId,
-                    label: localStorage.getItem("deviceLabel") || `Dispositivo ${deviceId.slice(-4).toUpperCase()}`,
-                    role: isAdminUnlocked ? "admin" : "all",
-                    lastSeen: serverTimestamp()
-                }, { merge: true });
+                const existingSnap = await getDoc(devRef);
+
+                if (!existingSnap.exists()) {
+                    // Solo si el dispositivo es nuevo se crea con valores iniciales
+                    await setDoc(devRef, {
+                        deviceId,
+                        label: defaultFallbackName,
+                        role: isAdminUnlocked ? "admin" : "all",
+                        lastSeen: serverTimestamp()
+                    });
+                } else {
+                    // Si ya existe en Firestore, NO pisamos su nombre ni su rol asignado por el admin
+                    await updateDoc(devRef, {
+                        lastSeen: serverTimestamp()
+                    });
+                }
             } catch (e) {
-                console.error(e);
+                console.error("Error registrando dispositivo:", e);
             }
         }
 
@@ -556,14 +572,25 @@
             devicesList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             const mine = devicesList.find(d => d.id === deviceId);
 
-            if (mine && mine.role) {
-                assignedRole = mine.role;
-                if (assignedRole === "admin") {
-                    isAdminUnlocked = true;
-                    sessionStorage.setItem("adminUnlocked", "true");
+            if (mine) {
+                // El nombre asignado por el administrador siempre prevalece
+                if (mine.label && mine.label.trim() !== "") {
+                    assignedDeviceName = mine.label.trim();
+                    localStorage.setItem("deviceLabel", assignedDeviceName);
+                }
+
+                if (mine.role) {
+                    assignedRole = mine.role;
+                    if (assignedRole === "admin") {
+                        isAdminUnlocked = true;
+                        sessionStorage.setItem("adminUnlocked", "true");
+                    } else if (!sessionStorage.getItem("adminUnlocked")) {
+                        isAdminUnlocked = false;
+                    }
                 }
             }
 
+            headerDeviceName.textContent = assignedDeviceName;
             applyRolePermissions();
             renderDevicesAdminTable();
         });
@@ -575,29 +602,27 @@
 
         function applyRolePermissions() {
             const role = getEffectiveRole();
+            headerDeviceName.textContent = assignedDeviceName;
             currentRoleBadge.textContent = ROLE_LABELS[role] || role;
             adminSection.classList.toggle("hidden", !isAdminUnlocked);
             adminBtnLabel.textContent = isAdminUnlocked ? "Salir Admin" : "Modo Admin";
-            document.getElementById("myDeviceLabel").textContent = `${deviceId}`;
+            document.getElementById("myDeviceLabel").textContent = `${assignedDeviceName} (${deviceId})`;
 
             const generalSection = document.getElementById("generalSection");
             const counterRows = document.querySelectorAll(".counter-row");
             const isReadOnly = role === "readonly";
             const canManageSessions = role === "admin" || role === "all" || role === "brothers_general";
 
-            // Botones de Abrir / Editar culto en curso según rol asignado
             document.querySelectorAll(".admin-or-general").forEach(btn => {
                 btn.classList.toggle("hidden", !canManageSessions);
             });
 
-            // Sección de datos generales
             if (role === "admin" || role === "all" || role === "brothers_general" || isReadOnly) {
                 generalSection.classList.remove("hidden");
             } else {
                 generalSection.classList.add("hidden");
             }
 
-            // Bloquear inputs generales si es solo lectura
             document.querySelectorAll(".editable-general").forEach(el => {
                 el.disabled = isReadOnly;
                 if (el.tagName === "BUTTON") {
@@ -605,7 +630,6 @@
                 }
             });
 
-            // Contadores visibles según rol asignado por el admin
             counterRows.forEach(row => {
                 const group = row.dataset.group;
                 let visible = false;
@@ -627,6 +651,11 @@
             const tbody = document.getElementById("devicesTableBody");
             if (!tbody || !isAdminUnlocked) return;
 
+            // Evitar redibujar mientras el administrador está escribiendo un nombre
+            if (document.activeElement && document.activeElement.classList.contains("device-label-input")) {
+                return;
+            }
+
             if (devicesList.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-txtsecondary">No hay dispositivos registrados</td></tr>`;
                 return;
@@ -641,9 +670,14 @@
                 return `
                     <tr class="hover:bg-gray-800/40">
                         <td class="py-2.5 px-4">
-                            <input type="text" value="${dev.label || ""}" data-label-id="${dev.id}"
-                                class="device-label-input bg-secondary border border-gray-600 rounded px-2 py-1 text-sm w-44 outline-none focus:border-accent">
-                            ${isMe ? '<span class="ml-2 text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">Tú</span>' : ''}
+                            <div class="flex items-center gap-2">
+                                <input type="text" value="${dev.label || ""}" placeholder="Ej: Puerta Principal" data-label-id="${dev.id}"
+                                    class="device-label-input bg-secondary border border-gray-600 rounded px-2.5 py-1.5 text-sm w-48 outline-none focus:border-accent">
+                                <button data-save-label="${dev.id}" class="save-label-btn bg-accent/20 hover:bg-accent hover:text-primary text-accent px-2.5 py-1.5 rounded text-xs font-medium transition" title="Guardar nombre">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                ${isMe ? '<span class="text-xs bg-purple-600/30 text-purple-200 px-2 py-0.5 rounded">Este equipo</span>' : ''}
+                            </div>
                         </td>
                         <td class="py-2.5 px-4 font-mono text-xs text-txtsecondary">${dev.id}</td>
                         <td class="py-2.5 px-4">
@@ -658,22 +692,41 @@
                 `;
             }).join("");
 
+            const saveDeviceLabel = async (targetId, rawValue) => {
+                const cleanLabel = rawValue.trim() || `Equipo ${targetId.slice(-4).toUpperCase()}`;
+                await updateDoc(doc(db, "deviceRoles", targetId), { label: cleanLabel });
+                if (targetId === deviceId) {
+                    assignedDeviceName = cleanLabel;
+                    localStorage.setItem("deviceLabel", cleanLabel);
+                    headerDeviceName.textContent = cleanLabel;
+                }
+                showToast(`Nombre actualizado a "${cleanLabel}"`);
+            };
+
+            tbody.querySelectorAll(".device-label-input").forEach(input => {
+                input.addEventListener("keydown", async (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        await saveDeviceLabel(input.dataset.labelId, input.value);
+                        input.blur();
+                    }
+                });
+            });
+
+            tbody.querySelectorAll(".save-label-btn").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const targetId = btn.dataset.saveLabel;
+                    const input = tbody.querySelector(`.device-label-input[data-label-id="${targetId}"]`);
+                    if (input) await saveDeviceLabel(targetId, input.value);
+                });
+            });
+
             tbody.querySelectorAll(".device-role-select").forEach(select => {
                 select.addEventListener("change", async (e) => {
                     const targetId = e.target.dataset.roleId;
                     const newRole = e.target.value;
                     await updateDoc(doc(db, "deviceRoles", targetId), { role: newRole });
                     showToast(`Rol actualizado a "${ROLE_LABELS[newRole]}"`);
-                });
-            });
-
-            tbody.querySelectorAll(".device-label-input").forEach(input => {
-                input.addEventListener("change", async (e) => {
-                    const targetId = e.target.dataset.labelId;
-                    const newLabel = e.target.value.trim();
-                    await updateDoc(doc(db, "deviceRoles", targetId), { label: newLabel });
-                    if (targetId === deviceId) localStorage.setItem("deviceLabel", newLabel);
-                    showToast("Etiqueta de dispositivo guardada");
                 });
             });
 
