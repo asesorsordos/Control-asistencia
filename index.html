@@ -1,10 +1,11 @@
-html_content = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asistencia a Cultos - Sincronizado</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/webp" href="LOGO_IPUC.webp">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style type="text/tailwindcss">
         @layer utilities {
@@ -48,7 +49,10 @@ html_content = '''<!DOCTYPE html>
         <header class="flex flex-wrap justify-between items-center gap-4 mb-6">
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold text-accent flex items-center gap-2">
-                    <i class="fa-solid fa-church"></i>
+                   <h1 class="text-2xl md:text-3xl font-bold text-accent flex items-center gap-3">
+    <img src="LOGO_IPUC.webp" alt="Logo IPUC" class="w-20 h-20 rounded-lg object-contain">
+    Control de Asistencia
+</h1>
                     Control de Asistencia
                 </h1>
                 <p id="connectionStatus" class="text-xs text-yellow-400 mt-1 flex items-center gap-1">
@@ -1274,9 +1278,4 @@ html_content = '''<!DOCTYPE html>
         registerCurrentDeviceIfNeeded();
     </script>
 </body>
-</html>'''
-
-with open("index.html", "w", encoding="utf-8") as f:
-    f.write(html_content)
-
-print("index.html generado exitosamente")
+</html>
