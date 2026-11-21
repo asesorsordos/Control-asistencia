@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+html_content = '''<!DOCTYPE html>
 <html lang="es" class="h-full">
 <head>
     <meta charset="UTF-8">
@@ -274,6 +274,21 @@
             </div>
         </main>
 
+        <!-- Historial de Movimientos del Culto en Curso -->
+        <section id="activityLogSection" class="bg-secondary rounded-lg shadow-xl p-6 mb-8">
+            <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+                <h2 class="text-lg md:text-xl font-bold text-accent flex items-center gap-2">
+                    <i class="fas fa-stream"></i>
+                    Historial de Movimientos del Culto
+                </h2>
+                <span class="text-xs text-txtsecondary">Últimos 30 cambios sincronizados</span>
+            </div>
+
+            <div class="max-h-60 overflow-y-auto bg-primary rounded-lg border border-gray-700 divide-y divide-gray-700" id="activityLogList">
+                <p class="p-4 text-sm text-txtsecondary text-center">Selecciona o inicia un culto para ver los movimientos.</p>
+            </div>
+        </section>
+
         <!-- Histórico de Registros -->
         <section class="bg-secondary rounded-lg shadow-xl p-6">
             <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
@@ -428,20 +443,20 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import {
-            getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
-            onSnapshot, query, orderBy, increment, serverTimestamp
+            getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
+            onSnapshot, query, orderBy, limit, increment, serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // =========================================================================
         // 1. CONFIGURACIÓN FIREBASE Y CLAVE DE ADMINISTRADOR
         // =========================================================================
         const firebaseConfig = {
-            apiKey:"AIzaSyDkA_s-s3jggfE7PXpBK8em00rPo4p2z48",
+            apiKey: "AIzaSyDkA_s-s3jggfE7PXpBK8em00rPo4p2z48",
             authDomain: "asistencias-de-cultos-ipuc.firebaseapp.com",
-            projectId:"asistencias-de-cultos-ipuc",
-            storageBucket: "asistencias-de-cultos-ipuc.firebasestorage.app",
+            projectId: "asistencias-de-cultos-ipuc",
+            storageBucket:"asistencias-de-cultos-ipuc.firebasestorage.app",
             messagingSenderId: "742374152833",
-            appId:  "1:742374152833:web:8c8f45be197edf15dfcb80"
+            appId: "1:742374152833:web:8c8f45be197edf15dfcb80"
         };
 
         // Cambia esta clave antes de publicar
@@ -480,6 +495,14 @@
             readonly: "Solo Lectura"
         };
 
+        const FIELD_LABELS = {
+            brothers: "Hermanos",
+            sisters: "Hermanas",
+            visitors: "Visitas",
+            children: "Niños",
+            visitingBrothers: "Hermanos Visitantes"
+        };
+
         // Identificador único de este dispositivo
         let deviceId = localStorage.getItem("churchDeviceId");
         if (!deviceId) {
@@ -493,6 +516,8 @@
         let records = [];
         let devicesList = [];
         let activeSessionId = localStorage.getItem("activeSessionId") || null;
+        let currentSubscribedSessionId = null;
+        let unsubscribeEvents = null;
         let assignedRole = "all";
         let assignedDeviceName = localStorage.getItem("deviceLabel") || defaultFallbackName;
         let isAdminUnlocked = sessionStorage.getItem("adminUnlocked") === "true";
@@ -550,7 +575,6 @@
                 const existingSnap = await getDoc(devRef);
 
                 if (!existingSnap.exists()) {
-                    // Solo si el dispositivo es nuevo se crea con valores iniciales
                     await setDoc(devRef, {
                         deviceId,
                         label: defaultFallbackName,
@@ -558,7 +582,6 @@
                         lastSeen: serverTimestamp()
                     });
                 } else {
-                    // Si ya existe en Firestore, NO pisamos su nombre ni su rol asignado por el admin
                     await updateDoc(devRef, {
                         lastSeen: serverTimestamp()
                     });
@@ -573,7 +596,6 @@
             const mine = devicesList.find(d => d.id === deviceId);
 
             if (mine) {
-                // El nombre asignado por el administrador siempre prevalece
                 if (mine.label && mine.label.trim() !== "") {
                     assignedDeviceName = mine.label.trim();
                     localStorage.setItem("deviceLabel", assignedDeviceName);
@@ -651,7 +673,6 @@
             const tbody = document.getElementById("devicesTableBody");
             if (!tbody || !isAdminUnlocked) return;
 
-            // Evitar redibujar mientras el administrador está escribiendo un nombre
             if (document.activeElement && document.activeElement.classList.contains("device-label-input")) {
                 return;
             }
@@ -778,7 +799,75 @@
         });
 
         // =========================================================================
-        // 3. SINCRONIZACIÓN EN TIEMPO REAL DE CULTOS
+        // 3. BITÁCORA DE MOVIMIENTOS EN TIEMPO REAL POR CULTO
+        // =========================================================================
+        async function logActivity(sessionId, actionText) {
+            if (!sessionId) return;
+            try {
+                const eventsCol = collection(db, "churchAttendanceRecords", sessionId, "events");
+                await addDoc(eventsCol, {
+                    deviceId: deviceId,
+                    deviceName: assignedDeviceName,
+                    action: actionText,
+                    createdAt: serverTimestamp()
+                });
+            } catch (err) {
+                console.error("Error guardando historial:", err);
+            }
+        }
+
+        function subscribeToSessionEvents(sessionId) {
+            if (sessionId === currentSubscribedSessionId && unsubscribeEvents) {
+                return;
+            }
+            currentSubscribedSessionId = sessionId;
+
+            const logList = document.getElementById("activityLogList");
+            if (unsubscribeEvents) {
+                unsubscribeEvents();
+                unsubscribeEvents = null;
+            }
+
+            if (!sessionId) {
+                logList.innerHTML = `<p class="p-4 text-sm text-txtsecondary text-center">No hay culto seleccionado.</p>`;
+                return;
+            }
+
+            const eventsQuery = query(
+                collection(db, "churchAttendanceRecords", sessionId, "events"),
+                orderBy("createdAt", "desc"),
+                limit(30)
+            );
+
+            unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
+                if (snapshot.empty) {
+                    logList.innerHTML = `<p class="p-4 text-sm text-txtsecondary text-center">Aún no hay movimientos registrados en este culto.</p>`;
+                    return;
+                }
+
+                logList.innerHTML = snapshot.docs.map(d => {
+                    const ev = d.data();
+                    const timeStr = ev.createdAt
+                        ? ev.createdAt.toDate().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+                        : "Enviando...";
+
+                    return `
+                        <div class="px-4 py-2.5 flex flex-wrap justify-between items-center gap-2 text-sm hover:bg-gray-800/40">
+                            <div>
+                                <span class="font-semibold text-accent">${ev.deviceName || "Equipo"}</span>
+                                <span class="text-txtprimary ml-1">${ev.action}</span>
+                            </div>
+                            <span class="text-xs font-mono text-txtsecondary">${timeStr}</span>
+                        </div>
+                    `;
+                }).join("");
+            }, (err) => {
+                console.error("Error leyendo historial:", err);
+            });
+        }
+
+        // =========================================================================
+        // 4. SINCRONIZACIÓN EN TIEMPO REAL DE CULTOS
         // =========================================================================
         const q = query(recordsCol, orderBy("date", "desc"));
         onSnapshot(q, (snapshot) => {
@@ -820,6 +909,7 @@
             activeSessionId = e.target.value;
             localStorage.setItem("activeSessionId", activeSessionId);
             renderActiveSession();
+            renderRecordsTable();
         });
 
         function renderActiveSession() {
@@ -827,12 +917,14 @@
             if (!current) {
                 noSessionBanner.classList.remove("hidden");
                 activeWorkspace.classList.add("hidden");
+                subscribeToSessionEvents(null);
                 return;
             }
 
             noSessionBanner.classList.add("hidden");
             activeWorkspace.classList.remove("hidden");
             activeSessionBadge.textContent = `${formatDate(current.date)} • ${current.type}`;
+            subscribeToSessionEvents(current.id);
 
             if (document.activeElement !== serviceLeaderInput) serviceLeaderInput.value = current.leader || "";
             if (document.activeElement !== servicePreacherInput) servicePreacherInput.value = current.preacher || "";
@@ -855,7 +947,7 @@
         }
 
         // =========================================================================
-        // 4. ACTUALIZACIONES ATÓMICAS DE CONTEO Y DATOS GENERALES
+        // 5. ACTUALIZACIONES ATÓMICAS DE CONTEO Y DATOS GENERALES
         // =========================================================================
         async function adjustCounter(field, delta) {
             if (!activeSessionId || getEffectiveRole() === "readonly") return;
@@ -869,6 +961,8 @@
                 await updateDoc(doc(db, "churchAttendanceRecords", activeSessionId), {
                     [field]: increment(delta)
                 });
+                const sign = delta > 0 ? "+1" : "-1";
+                await logActivity(activeSessionId, `registró ${sign} en ${FIELD_LABELS[field] || field}`);
             } catch (err) {
                 showToast("No se pudo actualizar el conteo", "error");
             }
@@ -884,12 +978,20 @@
 
         saveGeneralBtn.addEventListener("click", async () => {
             if (!activeSessionId || getEffectiveRole() === "readonly") return;
+            const leader = serviceLeaderInput.value.trim();
+            const preacher = servicePreacherInput.value.trim();
+            const offering = parseInt(serviceOfferingInput.value) || 0;
+
             try {
                 await updateDoc(doc(db, "churchAttendanceRecords", activeSessionId), {
-                    leader: serviceLeaderInput.value.trim(),
-                    preacher: servicePreacherInput.value.trim(),
-                    offering: parseInt(serviceOfferingInput.value) || 0
+                    leader,
+                    preacher,
+                    offering
                 });
+                await logActivity(
+                    activeSessionId,
+                    `actualizó datos generales (Dirigió: ${leader || "-"}, Predicó: ${preacher || "-"}, Ofrenda: $${offering.toLocaleString()})`
+                );
                 showToast("Datos generales sincronizados");
             } catch (err) {
                 showToast("Error al guardar datos generales", "error");
@@ -897,7 +999,7 @@
         });
 
         // =========================================================================
-        // 5. CREAR O EDITAR CULTO EN CURSO (SINCRONIZADO)
+        // 6. CREAR O EDITAR CULTO EN CURSO (SINCRONIZADO)
         // =========================================================================
         const sessionModal = document.getElementById("sessionModal");
         const sessionModalTitle = document.getElementById("sessionModalTitle");
@@ -947,6 +1049,7 @@
                         type,
                         date
                     });
+                    await logActivity(activeSessionId, `editó el culto a "${type}" (${formatDate(date)})`);
                     showToast("Culto en curso actualizado en todos los dispositivos");
                 } else {
                     const newDoc = await addDoc(recordsCol, {
@@ -964,6 +1067,7 @@
                     });
                     activeSessionId = newDoc.id;
                     localStorage.setItem("activeSessionId", activeSessionId);
+                    await logActivity(newDoc.id, `abrió el culto "${type}" (${formatDate(date)})`);
                     showToast("Nuevo culto abierto para todos los dispositivos");
                 }
                 sessionModal.classList.add("hidden");
@@ -973,7 +1077,7 @@
         });
 
         // =========================================================================
-        // 6. TABLA HISTÓRICA, ELIMINACIÓN, EXCEL Y ESTADÍSTICAS
+        // 7. TABLA HISTÓRICA, ELIMINACIÓN, EXCEL Y ESTADÍSTICAS
         // =========================================================================
         function renderRecordsTable() {
             const filterValue = filterRecords.value;
@@ -1045,8 +1149,12 @@
         document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
             if (!recordIdToDelete) return;
             try {
+                // Limpiar también los eventos de la subcolección antes de borrar el culto
+                const eventsSnap = await getDocs(collection(db, "churchAttendanceRecords", recordIdToDelete, "events"));
+                await Promise.all(eventsSnap.docs.map(evDoc => deleteDoc(evDoc.ref)));
+
                 await deleteDoc(doc(db, "churchAttendanceRecords", recordIdToDelete));
-                showToast("Registro eliminado");
+                showToast("Registro e historial eliminados");
             } catch (err) {
                 showToast("Error al eliminar", "error");
             } finally {
@@ -1083,8 +1191,8 @@
                 ].map(sanitize).join(",");
             });
 
-            const csv = [headers.join(","), ...rows].join("\n");
-            const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+            const csv = [headers.join(","), ...rows].join("\\n");
+            const blob = new Blob(["\\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
@@ -1166,4 +1274,9 @@
         registerCurrentDeviceIfNeeded();
     </script>
 </body>
-</html>
+</html>'''
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print("index.html generado exitosamente")
